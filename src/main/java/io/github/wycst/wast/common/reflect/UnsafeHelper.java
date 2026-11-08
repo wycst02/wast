@@ -33,40 +33,6 @@ public final class UnsafeHelper {
 
     static final Unsafe UNSAFE;
 
-    static final Field modifierField;
-
-    static {
-        Field field = null;
-        try {
-            field = Field.class.getDeclaredField("modifiers");
-            setAccessible(field);
-        } catch (Exception e) {
-            try {
-                Method getDeclaredFields0 = Class.class.getDeclaredMethod("getDeclaredFields0", boolean.class);
-                setAccessible(getDeclaredFields0);
-                Field[] fields = (Field[]) getDeclaredFields0.invoke(Field.class, false);
-                for (Field target : fields) {
-                    if ("modifiers".equals(target.getName())) {
-                        field = target;
-                        setAccessible(field);
-                        break;
-                    }
-                }
-            } catch (Throwable throwable) {
-            }
-        }
-        modifierField = field;
-    }
-
-    public static void clearFinalModifiers(Field field) {
-        if (modifierField != null) {
-            try {
-                modifierField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            } catch (Exception e) {
-            }
-        }
-    }
-
     static {
         Field theUnsafeField;
         try {
@@ -171,14 +137,70 @@ public final class UnsafeHelper {
 
     // reflect
     static {
-        long overrideOffset = 12;
+        long overrideOffset;
         try {
             //note: jdk18 not supported
             Field overrideField = AccessibleObject.class.getDeclaredField("override");
             overrideOffset = objectFieldOffset(overrideField);
         } catch (NoSuchFieldException e) {
+            overrideOffset = detectOverrideOffset();
         }
         OVERRIDE_OFFSET = overrideOffset;
+    }
+
+    static final Field modifierField;
+
+    static {
+        Field field = null;
+        try {
+            field = Field.class.getDeclaredField("modifiers");
+            setAccessible(field);
+        } catch (Exception e) {
+            try {
+                Method getDeclaredFields0 = Class.class.getDeclaredMethod("getDeclaredFields0", boolean.class);
+                setAccessible(getDeclaredFields0);
+                Field[] fields = (Field[]) getDeclaredFields0.invoke(Field.class, false);
+                for (Field target : fields) {
+                    if ("modifiers".equals(target.getName())) {
+                        field = target;
+                        setAccessible(field);
+                        break;
+                    }
+                }
+            } catch (Throwable throwable) {
+            }
+        }
+        modifierField = field;
+    }
+
+    /**
+     * 探测override字段偏移，适配紧凑对象头（jdk27默认开启，对象头由12字节压缩为8字节）
+     */
+    static long detectOverrideOffset() {
+        try {
+            Method plain = Object.class.getMethod("toString");
+            Method accessible = Object.class.getMethod("toString");
+            accessible.setAccessible(true);
+            for (long offset = 8; offset <= 12; offset += 4) {
+                if (UNSAFE.getInt(plain, offset) == 0 && UNSAFE.getInt(accessible, offset) == 1) {
+                    return offset;
+                }
+            }
+        } catch (Throwable throwable) {
+        }
+        int baseOffset = arrayBaseOffset(int[].class) - 4;
+        return Math.max(baseOffset, 8);
+    }
+
+    public static boolean tryClearFinalModifiers(Field field) {
+        if (modifierField != null && JDKVersion.VERSION < 27) {
+            try {
+                modifierField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+                return true;
+            } catch (Exception e) {
+            }
+        }
+        return false;
     }
 
     /***

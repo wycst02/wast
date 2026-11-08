@@ -344,7 +344,7 @@ public final class ClassStrucWrap {
 
                 Field nameField = sourceClass.getDeclaredField(name);
                 setAccessible(nameField);
-                clearFinalModifiers(nameField);
+                UnsafeHelper.tryClearFinalModifiers(nameField);
                 Method nameMethod = sourceClass.getDeclaredMethod(name);
                 setAccessible(nameMethod);
 
@@ -781,7 +781,7 @@ public final class ClassStrucWrap {
                 String underlineName = StringUtils.camelCaseToSymbol(fieldName);
                 if (fieldNames.add(fieldName)) {
                     setAccessible(field);
-                    clearFinalModifiers(field);
+                    UnsafeHelper.tryClearFinalModifiers(field);
 
                     FieldInfo fieldInfo = new FieldInfo();
                     fieldInfo.setName(fieldName);
@@ -844,31 +844,9 @@ public final class ClassStrucWrap {
         wrapper.fieldsCheckCode = fieldsCheckCode;
     }
 
-    static final Field modifierField;
     static final Method getParametersMethod;
 
     static {
-        Field field = null;
-        try {
-            field = Field.class.getDeclaredField("modifiers");
-            setAccessible(field);
-        } catch (Exception e) {
-            try {
-                Method getDeclaredFields0 = Class.class.getDeclaredMethod("getDeclaredFields0", boolean.class);
-                setAccessible(getDeclaredFields0);
-                Field[] fields = (Field[]) getDeclaredFields0.invoke(Field.class, false);
-                for (Field target : fields) {
-                    if ("modifiers".equals(target.getName())) {
-                        field = target;
-                        setAccessible(field);
-                        break;
-                    }
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-        modifierField = field;
-
         // jdk8+ supported
         Method parametersMethod = null;
         try {
@@ -878,15 +856,6 @@ public final class ClassStrucWrap {
         } catch (Exception ignored) {
         }
         getParametersMethod = parametersMethod;
-    }
-
-    private static void clearFinalModifiers(Field field) {
-        if (modifierField != null) {
-            try {
-                modifierField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            } catch (Exception ignored) {
-            }
-        }
     }
 
     private static boolean setAccessible(AccessibleObject accessibleObject) {
