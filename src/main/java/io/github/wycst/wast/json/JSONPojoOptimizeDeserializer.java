@@ -53,7 +53,7 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
             if ((c = buf[offset]) != endToken) {
                 long hashValue = readPojoFieldHash(c, buf, offset, endToken, parseContext);
                 JSONKeyValueMap.EntryNode<JSONPojoFieldDeserializer> entryNode = valueEntryNodes[(int) (hashValue & mask)];
-                if (entryNode != null && (!parseContext.strictMode ? entryNode.hash == hashValue : entryNode.equals(buf, offset, parseContext.endIndex - offset))) {
+                if (entryNode != null && (!parseContext.optionConfig.strictMode ? entryNode.hash == hashValue : entryNode.equals(buf, offset, parseContext.endIndex - offset))) {
                     return entryNode.value;
                 }
                 return skipIfNotMatch(buf, endToken, parseContext);
@@ -67,7 +67,7 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
             if ((c = buf[offset]) != endToken) {
                 long hashValue = readPojoFieldHash(c, buf, offset, endToken, parseContext);
                 JSONKeyValueMap.EntryNode<JSONPojoFieldDeserializer> entryNode = valueEntryNodes[(int) (hashValue & mask)];
-                if (entryNode != null && (!parseContext.strictMode ? entryNode.hash == hashValue : entryNode.equals(buf, offset, parseContext.endIndex - offset))) {
+                if (entryNode != null && (!parseContext.optionConfig.strictMode ? entryNode.hash == hashValue : entryNode.equals(buf, offset, parseContext.endIndex - offset))) {
                     return entryNode.value;
                 }
                 return skipIfNotMatch(buf, endToken, parseContext);
@@ -91,12 +91,12 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
             parseNull(buf, fromIndex, parseContext);
             return null;
         } else {
-            if (parseContext.unMatchedEmptyAsNull && (c == '"' || c == '\'') && buf[fromIndex + 1] == c) {
+            if (parseContext.optionConfig.unMatchedEmptyAsNull && (c == '"' || c == '\'') && buf[fromIndex + 1] == c) {
                 parseContext.endIndex = fromIndex + 1;
                 return null;
             }
             // not support or custom handle ?
-            return throwUnexpectedException(buf, fromIndex, c, '{');
+            return JSONGeneral.throwUnexpectedException(buf, fromIndex, c, '{');
         }
     }
 
@@ -108,12 +108,12 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
             parseNull(buf, fromIndex, parseContext);
             return null;
         } else {
-            if (parseContext.unMatchedEmptyAsNull && (c == DOUBLE_QUOTATION || c == '\'') && buf[fromIndex + 1] == c) {
+            if (parseContext.optionConfig.unMatchedEmptyAsNull && (c == JSONGeneral.DOUBLE_QUOTATION || c == '\'') && buf[fromIndex + 1] == c) {
                 parseContext.endIndex = fromIndex + 1;
                 return null;
             }
             // not support or custom handle ?
-            return throwUnexpectedException(buf, fromIndex, c, '{');
+            return JSONGeneral.throwUnexpectedException(buf, fromIndex, c, '{');
         }
     }
 
@@ -124,10 +124,10 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
     static final <E> E skipIfNotMatch(char[] buf, int endToken, JSONParseContext parseContext) {
         int offset = parseContext.endIndex;
         char prev = buf[offset - 1];
-        while (prev == ESCAPE_BACKSLASH) {
+        while (prev == JSONGeneral.ESCAPE_BACKSLASH) {
             boolean isPrevEscape = true;
             int j = offset - 1;
-            while (buf[--j] == ESCAPE_BACKSLASH) {
+            while (buf[--j] == JSONGeneral.ESCAPE_BACKSLASH) {
                 isPrevEscape = !isPrevEscape;
             }
             if (isPrevEscape) {
@@ -144,7 +144,7 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
     abstract JSONPojoFieldDeserializer matchDeserializer(char[] buf, int offset, int endToken, JSONParseContext parseContext);
 
     final JSONPojoFieldDeserializer matchUnquoted(char[] buf, int offset, int beginByte, JSONParseContext parseContext) {
-        if (parseContext.allowUnquotedFieldNames) {
+        if (parseContext.optionConfig.allowUnquotedFieldNames) {
             final int from = offset;
             long hashValue = beginByte;
             char c;
@@ -156,7 +156,7 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
             parseContext.endIndex = offset - 1;
             return fieldDeserializerMap.getValue(buf, from, offset, hashValue);
         } else {
-            throwUnexpectedException(buf, offset, beginByte, '"', '\'');
+            JSONGeneral.throwUnexpectedException(buf, offset, beginByte, '"', '\'');
             return null;
         }
     }
@@ -165,10 +165,10 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
         if (entity == null) {
             entity = pojoStructure.newInstance();
         }
-        final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+        final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
         int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
         char c = buf[i];
-        if (c == END_OBJECT) {
+        if (c == JSONGeneral.END_OBJECT) {
             parseContext.endIndex = i;
             return entity;
         }
@@ -176,26 +176,26 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
         boolean isComma;
         JSONPojoFieldDeserializer fieldDeserializer;
         for (; ; ) {
-            fieldDeserializer = c == DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
+            fieldDeserializer = c == JSONGeneral.DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
             c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-            if (c == COLON_SIGN) {
+            if (c == JSONGeneral.COLON_SIGN) {
                 i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext);
                 if (fieldDeserializer != null) {
                     Object value = fieldDeserializer.deserializer.deserialize(charSource, buf, i, fieldDeserializer.genericParameterizedType, null, '}', parseContext);
-                    JSON_SECURE_TRUSTED_ACCESS.set(fieldDeserializer.setterInfo, entity, value);
+                    JSONGeneral.JSON_SECURE_TRUSTED_ACCESS.set(fieldDeserializer.setterInfo, entity, value);
                 } else {
                     JSONTypeDeserializer.ANY.skip(charSource, buf, i, '}', parseContext);
                 }
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_OBJECT || ((isComma = c == COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == END_OBJECT) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_OBJECT || ((isComma = c == JSONGeneral.COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == JSONGeneral.END_OBJECT) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return entity;
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', '}');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', '}');
                 }
             } else {
-                throwUnexpectedException(buf, i, c, ':');
+                JSONGeneral.throwUnexpectedException(buf, i, c, ':');
             }
         }
     }
@@ -207,10 +207,10 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
     static final <E> E skipIfNotMatch(byte[] buf, int endToken, JSONParseContext parseContext) {
         int offset = parseContext.endIndex;
         byte prev = buf[offset - 1];
-        while (prev == ESCAPE_BACKSLASH) {
+        while (prev == JSONGeneral.ESCAPE_BACKSLASH) {
             boolean isPrevEscape = true;
             int j = offset - 1;
-            while (buf[--j] == ESCAPE_BACKSLASH) {
+            while (buf[--j] == JSONGeneral.ESCAPE_BACKSLASH) {
                 isPrevEscape = !isPrevEscape;
             }
             if (isPrevEscape) {
@@ -227,7 +227,7 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
     abstract JSONPojoFieldDeserializer matchDeserializer(byte[] buf, int offset, int endToken, JSONParseContext parseContext);
 
     final JSONPojoFieldDeserializer matchUnquoted(byte[] buf, int offset, int beginByte, JSONParseContext parseContext) {
-        if (parseContext.allowUnquotedFieldNames) {
+        if (parseContext.optionConfig.allowUnquotedFieldNames) {
             final int from = offset;
             long hashValue = beginByte;
             byte c;
@@ -239,7 +239,7 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
             parseContext.endIndex = offset - 1;
             return fieldDeserializerMap.getValue(buf, from, offset, hashValue);
         } else {
-            throwUnexpectedException(buf, offset, beginByte, '"', '\'');
+            JSONGeneral.throwUnexpectedException(buf, offset, beginByte, '"', '\'');
             return null;
         }
     }
@@ -248,10 +248,10 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
         if (entity == null) {
             entity = pojoStructure.newInstance();
         }
-        final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+        final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
         int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
         byte c = buf[i];
-        if (c == END_OBJECT) {
+        if (c == JSONGeneral.END_OBJECT) {
             parseContext.endIndex = i;
             return entity;
         }
@@ -259,115 +259,110 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
         boolean isComma;
         JSONPojoFieldDeserializer fieldDeserializer;
 
-        fieldDeserializer = c == DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
+        fieldDeserializer = c == JSONGeneral.DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
         c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-        if (c == COLON_SIGN) {
+        if (c == JSONGeneral.COLON_SIGN) {
             i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext);
             if (fieldDeserializer != null) {
-                Object value = fieldDeserializer.deserializer.deserialize(charSource, buf, i, fieldDeserializer.genericParameterizedType, null, END_OBJECT, parseContext);
-                JSON_SECURE_TRUSTED_ACCESS.set(fieldDeserializer.setterInfo, entity, value);
+                fieldDeserializer.deserializeAndSet(charSource, buf, i, entity, parseContext);
             } else {
-                JSONTypeDeserializer.ANY.skip(charSource, buf, i, END_OBJECT, parseContext);
+                JSONTypeDeserializer.ANY.skip(charSource, buf, i, JSONGeneral.END_OBJECT, parseContext);
             }
             c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-            if (c == END_OBJECT || ((isComma = c == COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == END_OBJECT) && allowLastEndComma)) {
+            if (c == JSONGeneral.END_OBJECT || ((isComma = c == JSONGeneral.COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == JSONGeneral.END_OBJECT) && allowLastEndComma)) {
                 parseContext.endIndex = i;
                 return entity;
             }
             if (!isComma) {
-                throwUnexpectedException(buf, i, c, ',', '}');
+                JSONGeneral.throwUnexpectedException(buf, i, c, ',', '}');
             }
         } else {
-            throwUnexpectedException(buf, i, c, ':');
+            JSONGeneral.throwUnexpectedException(buf, i, c, ':');
         }
 
-        fieldDeserializer = c == DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
+        fieldDeserializer = c == JSONGeneral.DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
         c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-        if (c == COLON_SIGN) {
+        if (c == JSONGeneral.COLON_SIGN) {
             i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext);
             if (fieldDeserializer != null) {
-                Object value = fieldDeserializer.deserializer.deserialize(charSource, buf, i, fieldDeserializer.genericParameterizedType, null, END_OBJECT, parseContext);
-                JSON_SECURE_TRUSTED_ACCESS.set(fieldDeserializer.setterInfo, entity, value);
+                fieldDeserializer.deserializeAndSet(charSource, buf, i, entity, parseContext);
             } else {
-                JSONTypeDeserializer.ANY.skip(charSource, buf, i, END_OBJECT, parseContext);
+                JSONTypeDeserializer.ANY.skip(charSource, buf, i, JSONGeneral.END_OBJECT, parseContext);
             }
             c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-            if (c == END_OBJECT || ((isComma = c == COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == END_OBJECT) && allowLastEndComma)) {
+            if (c == JSONGeneral.END_OBJECT || ((isComma = c == JSONGeneral.COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == JSONGeneral.END_OBJECT) && allowLastEndComma)) {
                 parseContext.endIndex = i;
                 return entity;
             }
             if (!isComma) {
-                throwUnexpectedException(buf, i, c, ',', '}');
+                JSONGeneral.throwUnexpectedException(buf, i, c, ',', '}');
             }
         } else {
-            throwUnexpectedException(buf, i, c, ':');
+            JSONGeneral.throwUnexpectedException(buf, i, c, ':');
         }
 
-        fieldDeserializer = c == DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
+        fieldDeserializer = c == JSONGeneral.DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
         c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-        if (c == COLON_SIGN) {
+        if (c == JSONGeneral.COLON_SIGN) {
             i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext);
             if (fieldDeserializer != null) {
-                Object value = fieldDeserializer.deserializer.deserialize(charSource, buf, i, fieldDeserializer.genericParameterizedType, null, END_OBJECT, parseContext);
-                JSON_SECURE_TRUSTED_ACCESS.set(fieldDeserializer.setterInfo, entity, value);
+                fieldDeserializer.deserializeAndSet(charSource, buf, i, entity, parseContext);
             } else {
-                JSONTypeDeserializer.ANY.skip(charSource, buf, i, END_OBJECT, parseContext);
+                JSONTypeDeserializer.ANY.skip(charSource, buf, i, JSONGeneral.END_OBJECT, parseContext);
             }
             c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-            if (c == END_OBJECT || ((isComma = c == COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == END_OBJECT) && allowLastEndComma)) {
+            if (c == JSONGeneral.END_OBJECT || ((isComma = c == JSONGeneral.COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == JSONGeneral.END_OBJECT) && allowLastEndComma)) {
                 parseContext.endIndex = i;
                 return entity;
             }
             if (!isComma) {
-                throwUnexpectedException(buf, i, c, ',', '}');
+                JSONGeneral.throwUnexpectedException(buf, i, c, ',', '}');
             }
         } else {
-            throwUnexpectedException(buf, i, c, ':');
+            JSONGeneral.throwUnexpectedException(buf, i, c, ':');
         }
 
-        fieldDeserializer = c == DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
+        fieldDeserializer = c == JSONGeneral.DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
         c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-        if (c == COLON_SIGN) {
+        if (c == JSONGeneral.COLON_SIGN) {
             i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext);
             if (fieldDeserializer != null) {
-                Object value = fieldDeserializer.deserializer.deserialize(charSource, buf, i, fieldDeserializer.genericParameterizedType, null, END_OBJECT, parseContext);
-                JSON_SECURE_TRUSTED_ACCESS.set(fieldDeserializer.setterInfo, entity, value);
+                fieldDeserializer.deserializeAndSet(charSource, buf, i, entity, parseContext);
             } else {
-                JSONTypeDeserializer.ANY.skip(charSource, buf, i, END_OBJECT, parseContext);
+                JSONTypeDeserializer.ANY.skip(charSource, buf, i, JSONGeneral.END_OBJECT, parseContext);
             }
             c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-            if (c == END_OBJECT || ((isComma = c == COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == END_OBJECT) && allowLastEndComma)) {
+            if (c == JSONGeneral.END_OBJECT || ((isComma = c == JSONGeneral.COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == JSONGeneral.END_OBJECT) && allowLastEndComma)) {
                 parseContext.endIndex = i;
                 return entity;
             }
             if (!isComma) {
-                throwUnexpectedException(buf, i, c, ',', '}');
+                JSONGeneral.throwUnexpectedException(buf, i, c, ',', '}');
             }
         } else {
-            throwUnexpectedException(buf, i, c, ':');
+            JSONGeneral.throwUnexpectedException(buf, i, c, ':');
         }
 
         for (; ; ) {
-            fieldDeserializer = c == DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
+            fieldDeserializer = c == JSONGeneral.DOUBLE_QUOTATION || c == '\'' ? matchDeserializer(buf, i + 1, c, parseContext) : matchUnquoted(buf, i, c, parseContext);
             c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-            if (c == COLON_SIGN) {
+            if (c == JSONGeneral.COLON_SIGN) {
                 i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext);
                 if (fieldDeserializer != null) {
-                    Object value = fieldDeserializer.deserializer.deserialize(charSource, buf, i, fieldDeserializer.genericParameterizedType, null, END_OBJECT, parseContext);
-                    JSON_SECURE_TRUSTED_ACCESS.set(fieldDeserializer.setterInfo, entity, value);
+                    fieldDeserializer.deserializeAndSet(charSource, buf, i, entity, parseContext);
                 } else {
-                    JSONTypeDeserializer.ANY.skip(charSource, buf, i, END_OBJECT, parseContext);
+                    JSONTypeDeserializer.ANY.skip(charSource, buf, i, JSONGeneral.END_OBJECT, parseContext);
                 }
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_OBJECT || ((isComma = c == COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == END_OBJECT) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_OBJECT || ((isComma = c == JSONGeneral.COMMA) && ((c = buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)]) == JSONGeneral.END_OBJECT) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return entity;
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', '}');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', '}');
                 }
             } else {
-                throwUnexpectedException(buf, i, c, ':');
+                JSONGeneral.throwUnexpectedException(buf, i, c, ':');
             }
         }
     }
@@ -427,7 +422,7 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
                         int c;
                         if ((c = buf[offset]) != endToken) {
                             int hashValue = readPojoFieldHashPlhv(c, buf, offset, endToken, parseContext);
-                            if ((!parseContext.strictMode ? hv == hashValue : one.equals(buf, offset, parseContext.endIndex - offset))) {
+                            if ((!parseContext.optionConfig.strictMode ? hv == hashValue : one.equals(buf, offset, parseContext.endIndex - offset))) {
                                 return value;
                             }
                             return skipIfNotMatch(buf, endToken, parseContext);
@@ -440,7 +435,7 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
                         int c;
                         if ((c = buf[offset]) != endToken) {
                             int hashValue = readPojoFieldHashPlhv(c, buf, offset, endToken, parseContext);
-                            if ((!parseContext.strictMode ? hv == hashValue : one.equals(buf, offset, parseContext.endIndex - offset))) {
+                            if ((!parseContext.optionConfig.strictMode ? hv == hashValue : one.equals(buf, offset, parseContext.endIndex - offset))) {
                                 return value;
                             }
                             return skipIfNotMatch(buf, endToken, parseContext);
@@ -496,7 +491,7 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
                     if ((c = buf[offset]) != endToken) {
                         int hashValue = readPojoFieldHashPlhv(c, buf, offset, endToken, parseContext);
                         JSONKeyValueMap.EntryNode<JSONPojoFieldDeserializer> entryNode = valueEntryNodes[hashValue & mask];
-                        if (entryNode != null && (!parseContext.strictMode ? entryNode.hash == hashValue : entryNode.equals(buf, offset, parseContext.endIndex - offset))) {
+                        if (entryNode != null && (!parseContext.optionConfig.strictMode ? entryNode.hash == hashValue : entryNode.equals(buf, offset, parseContext.endIndex - offset))) {
                             return entryNode.value;
                         }
                         return skipIfNotMatch(buf, endToken, parseContext);
@@ -510,7 +505,7 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
                     if ((c = buf[offset]) != endToken) {
                         int hashValue = readPojoFieldHashPlhv(c, buf, offset, endToken, parseContext);
                         JSONKeyValueMap.EntryNode<JSONPojoFieldDeserializer> entryNode = valueEntryNodes[hashValue & mask];
-                        if (entryNode != null && (!parseContext.strictMode ? entryNode.hash == hashValue : entryNode.equals(buf, offset, parseContext.endIndex - offset))) {
+                        if (entryNode != null && (!parseContext.optionConfig.strictMode ? entryNode.hash == hashValue : entryNode.equals(buf, offset, parseContext.endIndex - offset))) {
                             return entryNode.value;
                         }
                         return skipIfNotMatch(buf, endToken, parseContext);

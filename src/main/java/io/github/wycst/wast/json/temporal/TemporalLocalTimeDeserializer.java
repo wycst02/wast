@@ -4,6 +4,7 @@ import io.github.wycst.wast.common.beans.GeneralDate;
 import io.github.wycst.wast.common.beans.GregorianDate;
 import io.github.wycst.wast.common.reflect.GenericParameterizedType;
 import io.github.wycst.wast.common.utils.NumberUtils;
+import io.github.wycst.wast.json.JSONGeneral;
 import io.github.wycst.wast.json.JSONParseContext;
 import io.github.wycst.wast.json.JSONTemporalDeserializer;
 import io.github.wycst.wast.json.exceptions.JSONException;
@@ -30,13 +31,13 @@ public class TemporalLocalTimeDeserializer extends JSONTemporalDeserializer {
 
     protected Object deserializeTemporal(char[] buf, int fromIndex, int endIndex, JSONParseContext jsonParseContext) throws Exception {
         // use dateTemplate && pattern
-        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, ZERO_TIME_ZONE);
+        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, JSONGeneral.ZERO_TIME_ZONE);
         return LocalTime.of(generalDate.getHourOfDay(), generalDate.getMinute(), generalDate.getSecond(), generalDate.getMillisecond() * 1000000);
     }
 
     protected Object deserializeTemporal(byte[] buf, int fromIndex, int endIndex, JSONParseContext jsonParseContext) throws Exception {
         // use dateTemplate && pattern
-        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, ZERO_TIME_ZONE);
+        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, JSONGeneral.ZERO_TIME_ZONE);
         return LocalTime.of(generalDate.getHourOfDay(), generalDate.getMinute(), generalDate.getSecond(), generalDate.getMillisecond() * 1000000);
     }
 
@@ -47,35 +48,35 @@ public class TemporalLocalTimeDeserializer extends JSONTemporalDeserializer {
         char c1, c2;
         boolean isDigitFlag;
         if ((isDigitFlag = NumberUtils.isDigit(c1 = buf[i])) && NumberUtils.isDigit(c2 = buf[++i])) {
-            hour = twoDigitsValue(c1, c2);
+            hour = JSONGeneral.twoDigitsValue(c1, c2);
             ++i;
         } else {
             if (isDigitFlag) {
                 hour = c1 & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', hour field error ");
             }
         }
         if ((isDigitFlag = NumberUtils.isDigit(c1 = buf[++i])) && NumberUtils.isDigit(c2 = buf[++i])) {
-            minute = twoDigitsValue(c1, c2);
+            minute = JSONGeneral.twoDigitsValue(c1, c2);
             ++i;
         } else {
             if (isDigitFlag) {
                 minute = c1 & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', minute field error ");
             }
         }
         if ((isDigitFlag = NumberUtils.isDigit(c1 = buf[++i])) && NumberUtils.isDigit(c2 = buf[++i])) {
-            second = twoDigitsValue(c1, c2);
+            second = JSONGeneral.twoDigitsValue(c1, c2);
             ++i;
         } else {
             if (isDigitFlag) {
                 second = c1 & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', second field error ");
             }
         }
@@ -85,7 +86,7 @@ public class TemporalLocalTimeDeserializer extends JSONTemporalDeserializer {
             int cnt = 9;
             while ((isDigitFlag = NumberUtils.isDigit(c = buf[++i])) && NumberUtils.isDigit(c1 = buf[++i])) {
                 cnt -= 2;
-                nanoOfSecond = nanoOfSecond * 100 + twoDigitsValue(c, c1);
+                nanoOfSecond = nanoOfSecond * 100 + JSONGeneral.twoDigitsValue(c, c1);
                 ;
             }
             if (isDigitFlag) {
@@ -101,7 +102,7 @@ public class TemporalLocalTimeDeserializer extends JSONTemporalDeserializer {
             jsonParseContext.endIndex = i;
             return LocalTime.of(hour, minute, second, nanoOfSecond);
         }
-        String errorContextTextAt = createErrorContextText(buf, i);
+        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected token '" + c1 + "', expected '" + endToken + "'");
     }
 
@@ -112,35 +113,35 @@ public class TemporalLocalTimeDeserializer extends JSONTemporalDeserializer {
         byte b1, b2;
         boolean isDigitFlag;
         if ((isDigitFlag = NumberUtils.isDigit(b1 = buf[i])) && NumberUtils.isDigit(b2 = buf[++i])) {
-            hour = twoDigitsValue(b1, b2);
+            hour = JSONGeneral.twoDigitsValue(b1, b2);
             ++i;
         } else {
             if (isDigitFlag) {
                 hour = b1 & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', hour field error ");
             }
         }
         if ((isDigitFlag = NumberUtils.isDigit(b1 = buf[++i])) && NumberUtils.isDigit(b2 = buf[++i])) {
-            minute = twoDigitsValue(b1, b2);
+            minute = JSONGeneral.twoDigitsValue(b1, b2);
             ++i;
         } else {
             if (isDigitFlag) {
                 minute = b1 & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', minute field error ");
             }
         }
         if ((isDigitFlag = NumberUtils.isDigit(b1 = buf[++i])) && NumberUtils.isDigit(b2 = buf[++i])) {
-            second = twoDigitsValue(b1, b2);
+            second = JSONGeneral.twoDigitsValue(b1, b2);
             ++i;
         } else {
             if (isDigitFlag) {
                 second = b1 & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', second field error ");
             }
         }
@@ -154,7 +155,7 @@ public class TemporalLocalTimeDeserializer extends JSONTemporalDeserializer {
             jsonParseContext.endIndex = i;
             return LocalTime.of(hour, minute, second, nanoOfSecond);
         }
-        String errorContextTextAt = createErrorContextText(buf, i);
+        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected token '" + (char) c + "', expected '" + (char) endToken + "'");
     }
 

@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * 支持ndjson读写
  */
-final class JSONL extends JSONGeneral {
+final class JSONL {
 
     /**
      * 解析ndjson(jsonl)
@@ -26,10 +26,10 @@ final class JSONL extends JSONGeneral {
         if (EnvUtils.JDK_9_PLUS) {
             byte[] bytes = (byte[]) JSONMemoryHandle.getStringValue(json);
             if (bytes.length == json.length()) {
-                return parseNdJson(typeDeserializer, AsciiStringSource.of(json), bytes, JSONParseContext.of(readOptions));
+                return parseNdJson(typeDeserializer, CharSource.ASCII, bytes, JSONParseContext.of(readOptions, json));
             } else {
                 char[] chars = json.toCharArray();
-                return parseNdJson(typeDeserializer, UTF16ByteArraySource.of(json), chars, JSONParseContext.of(readOptions));
+                return parseNdJson(typeDeserializer, CharSource.UTF16, chars, JSONParseContext.of(readOptions, json));
             }
         }
         char[] chars = (char[]) JSONMemoryHandle.getStringValue(json);
@@ -38,8 +38,7 @@ final class JSONL extends JSONGeneral {
 
     static List parseNdJson(final JSONTypeDeserializer typeDeserializer, CharSource source, byte[] bytes, JSONParseContext parseContext) {
         int fromIndex = 0, toIndex = bytes.length;
-        parseContext.toIndex = toIndex;
-        parseContext.multiple = true;
+        // parseContext.multiple = true;
         List results = new ArrayList();
         try {
             while (true) {
@@ -49,21 +48,20 @@ final class JSONL extends JSONGeneral {
                     ++fromIndex;
                 }
                 if (fromIndex == toIndex) break;
-                Object result = typeDeserializer.deserialize(source, bytes, fromIndex, GenericParameterizedType.AnyType, null, ZERO, parseContext);
+                Object result = typeDeserializer.deserialize(source, bytes, fromIndex, GenericParameterizedType.AnyType, null, JSONGeneral.ZERO, parseContext);
                 results.add(result);
                 fromIndex = parseContext.endIndex + 1;
             }
             return results;
         } catch (Exception e) {
-            String errorContextTextAt = createErrorContextText(bytes, fromIndex);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(bytes, fromIndex);
             throw new JSONException("Syntax error, at pos " + fromIndex + ", " + errorContextTextAt, e);
         }
     }
 
     static List parseNdJson(final JSONTypeDeserializer typeDeserializer, CharSource source, char[] chars, JSONParseContext parseContext) {
         int fromIndex = 0, toIndex = chars.length;
-        parseContext.toIndex = toIndex;
-        parseContext.multiple = true;
+        // parseContext.multiple = true;
         List results = new ArrayList();
         try {
             while (true) {
@@ -79,7 +77,7 @@ final class JSONL extends JSONGeneral {
             }
             return results;
         } catch (Exception e) {
-            String errorContextTextAt = createErrorContextText(chars, fromIndex);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(chars, fromIndex);
             throw new JSONException("Syntax error, at pos " + fromIndex + " " + errorContextTextAt, e);
         }
     }

@@ -89,7 +89,7 @@ import java.util.Map;
  * @see GenericParameterizedType
  */
 @SuppressWarnings({"all"})
-public final class JSON extends JSONGeneral {
+public final class JSON {
 
     static final JSONInstance INSTANCE = JSONInstance.internal();
 
@@ -661,7 +661,7 @@ public final class JSON extends JSONGeneral {
      * @return JSON字符串
      */
     public static String toJsonString(Object obj) {
-        return INSTANCE.toJsonString(obj, new JSONConfig());
+        return INSTANCE.toJsonString(obj, JSONConfig.DEFAULT);
     }
 
     /**
@@ -702,8 +702,12 @@ public final class JSON extends JSONGeneral {
      * @param options
      * @return
      */
+    public static byte[] toJsonBytes(Object obj) {
+        return INSTANCE.toJsonBytes(obj, EnvUtils.CHARSET_UTF_8, JSONConfig.DEFAULT);
+    }
+
     public static byte[] toJsonBytes(Object obj, WriteOption... options) {
-        return INSTANCE.toJsonBytes(obj, EnvUtils.CHARSET_UTF_8, JSONConfig.of(options));
+        return INSTANCE.toJsonBytes(obj, EnvUtils.CHARSET_UTF_8, options);
     }
 
     /**
@@ -726,7 +730,7 @@ public final class JSON extends JSONGeneral {
      * @return
      */
     public static byte[] toJsonBytes(Object obj, Charset charset, WriteOption... options) {
-        return INSTANCE.toJsonBytes(obj, charset, JSONConfig.of(options));
+        return INSTANCE.toJsonBytes(obj, charset, options);
     }
 
     /**
@@ -771,7 +775,7 @@ public final class JSON extends JSONGeneral {
      * @param options
      */
     public static void writeJsonTo(Object object, OutputStream os, WriteOption... options) {
-        INSTANCE.writeJsonTo(object, os, EnvUtils.CHARSET_UTF_8, JSONConfig.of(options));
+        INSTANCE.writeJsonTo(object, os, EnvUtils.CHARSET_UTF_8, options);
     }
 
     /**
@@ -783,7 +787,7 @@ public final class JSON extends JSONGeneral {
      * @param options
      */
     public static void writeJsonTo(Object object, OutputStream os, Charset charset, WriteOption... options) {
-        INSTANCE.writeJsonTo(object, os, charset, JSONConfig.of(options));
+        INSTANCE.writeJsonTo(object, os, charset, options);
     }
 
     /**
@@ -969,9 +973,9 @@ public final class JSON extends JSONGeneral {
      */
     public static double parseDouble(String json) {
         if (EnvUtils.JDK_9_PLUS) {
-            return parseFloats((byte[]) getStringValue(json), 0, json.length(), true);
+            return JSONGeneral.parseFloats((byte[]) JSONGeneral.getStringValue(json), 0, json.length(), null, true);
         } else {
-            return parseFloats((char[]) getStringValue(json), 0, json.length(), true);
+            return JSONGeneral.parseFloats((char[]) JSONGeneral.getStringValue(json), 0, json.length(), null, true);
         }
     }
 
@@ -983,7 +987,7 @@ public final class JSON extends JSONGeneral {
      * @throws JSONException
      */
     public final static double parseDouble(byte[] buf) {
-        return parseFloats(buf, 0, buf.length, true);
+        return JSONGeneral.parseFloats(buf, 0, buf.length, null, true);
     }
 
     /**
@@ -996,14 +1000,14 @@ public final class JSON extends JSONGeneral {
      * @throws JSONException
      */
     public final static double parseDouble(byte[] buf, final int offset, final int endIndex) {
-        return parseFloats(buf, offset, endIndex, true);
+        return JSONGeneral.parseFloats(buf, offset, endIndex, null, true);
     }
 
     public static float parseFloat(String json) {
         if (EnvUtils.JDK_9_PLUS) {
-            return (float) parseFloats((byte[]) getStringValue(json), 0, json.length(), false);
+            return (float) JSONGeneral.parseFloats((byte[]) JSONGeneral.getStringValue(json), 0, json.length(), null, false);
         } else {
-            return (float) parseFloats((char[]) getStringValue(json), 0, json.length(), false);
+            return (float) JSONGeneral.parseFloats((char[]) JSONGeneral.getStringValue(json), 0, json.length(), null, false);
         }
     }
 
@@ -1015,7 +1019,7 @@ public final class JSON extends JSONGeneral {
      * @throws JSONException
      */
     public final static float parseFloat(byte[] buf) {
-        return (float) parseFloats(buf, 0, buf.length, false);
+        return (float) JSONGeneral.parseFloats(buf, 0, buf.length, null, false);
     }
 
     /**
@@ -1028,7 +1032,7 @@ public final class JSON extends JSONGeneral {
      * @throws JSONException
      */
     public final static float parseFloat(byte[] buf, final int offset, final int endIndex) {
-        return (float) parseFloats(buf, offset, endIndex, false);
+        return (float) JSONGeneral.parseFloats(buf, offset, endIndex, null, false);
     }
 
     /**
@@ -1042,7 +1046,7 @@ public final class JSON extends JSONGeneral {
      * @return
      */
     public final static double parseDouble(char[] buf) {
-        return parseFloats(buf, 0, buf.length, true);
+        return JSONGeneral.parseFloats(buf, 0, buf.length, null, true);
     }
 
     /**
@@ -1058,7 +1062,7 @@ public final class JSON extends JSONGeneral {
      * @return
      */
     public final static double parseDouble(char[] buf, final int offset, final int endIndex) {
-        return parseFloats(buf, offset, endIndex, true);
+        return JSONGeneral.parseFloats(buf, offset, endIndex, null, true);
     }
 
     /**
@@ -1069,7 +1073,7 @@ public final class JSON extends JSONGeneral {
      * @throws JSONException
      */
     public final static float parseFloat(char[] buf) {
-        return (float) parseFloats(buf, 0, buf.length, false);
+        return (float) JSONGeneral.parseFloats(buf, 0, buf.length, null, false);
     }
 
     // Faster than toJsonString

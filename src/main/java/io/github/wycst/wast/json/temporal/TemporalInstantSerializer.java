@@ -2,10 +2,7 @@ package io.github.wycst.wast.json.temporal;
 
 import io.github.wycst.wast.common.beans.GeneralDate;
 import io.github.wycst.wast.common.beans.GregorianDate;
-import io.github.wycst.wast.json.JSONConfig;
-import io.github.wycst.wast.json.JSONPropertyDefinition;
-import io.github.wycst.wast.json.JSONTemporalSerializer;
-import io.github.wycst.wast.json.JSONWriter;
+import io.github.wycst.wast.json.*;
 
 import java.time.Instant;
 import java.util.TimeZone;
@@ -26,7 +23,7 @@ public class TemporalInstantSerializer extends JSONTemporalSerializer {
 
     public TemporalInstantSerializer(Class<?> temporalClass, JSONPropertyDefinition property) {
         super(temporalClass, property);
-        TimeZone timeZone = ZERO_TIME_ZONE;
+        TimeZone timeZone = JSONGeneral.ZERO_TIME_ZONE;
         if (dateFormatter != null && !property.timezone().isEmpty()) {
             timeZone = getTimeZone(property.timezone());
         }

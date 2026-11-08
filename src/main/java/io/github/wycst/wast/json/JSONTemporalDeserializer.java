@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
  */
 @SuppressWarnings({"all"})
 public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
-
     final protected int patternType;
     final boolean isDefaultTemporal;
     protected DateTemplate dateTemplate;
@@ -33,7 +32,7 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
     protected JSONTemporalDeserializer(TemporalConfig temporalConfig) {
         checkClass(temporalConfig.getGenericParameterizedType());
         String pattern = temporalConfig.getDatePattern();
-        patternType = getPatternType(pattern);
+        patternType = JSONGeneral.getPatternType(pattern);
         isDefaultTemporal = patternType == 0;
         if (patternType == 0) {
             createDefaultTemplate();
@@ -109,7 +108,7 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
                         throwable = ((InvocationTargetException) throwable).getTargetException();
                     }
                     String source = new String(buf, fromIndex + 1, endIndex - fromIndex - 1);
-                    String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                     throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', text '" + source + "' cannot convert to " + parameterizedType.getActualType() + ", exception: " + throwable.getMessage());
                 }
             }
@@ -125,7 +124,7 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
             }
         }
         // not support or custom handle ?
-        String errorContextTextAt = createErrorContextText(buf, fromIndex);
+        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
         throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + beginChar + "' for Temporal Type, expected '\"' ");
     }
 
@@ -157,7 +156,7 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
                         throwable = ((InvocationTargetException) throwable).getTargetException();
                     }
                     String source = new String(buf, fromIndex + 1, endIndex - fromIndex - 1);
-                    String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                     throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', text '" + source + "' cannot convert to " + parameterizedType.getActualType() + ", exception: " + throwable.getMessage());
                 }
             }
@@ -174,7 +173,7 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
             }
         }
         // not support or custom handle ?
-        String errorContextTextAt = createErrorContextText(buf, fromIndex);
+        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
         throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) beginByte + "' for Temporal Type, expected '\"' ");
     }
 
@@ -197,7 +196,7 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
     protected final static int fourDigitsYear(byte[] buf, int offset) {
         final int value = JSONMemoryHandle.JSON_ENDIAN.getInt(buf, offset);
         if ((value & 0xF0F0F0F0) == 0x30303030) {
-            return THREE_DIGITS_MUL10[(buf[offset] & 0xf) << 8 | (buf[offset + 1] & 0xf) << 4 | (buf[offset + 2] & 0xf)] + buf[offset + 3];
+            return JSONGeneral.THREE_DIGITS_MUL10[(buf[offset] & 0xf) << 8 | (buf[offset + 1] & 0xf) << 4 | (buf[offset + 2] & 0xf)] + buf[offset + 3];
         }
         return -1;
     }
@@ -205,7 +204,7 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
     protected final static int fourDigitsYear(char[] buf, int offset) {
         final long value = JSONMemoryHandle.JSON_ENDIAN.getLong(buf, offset);
         if ((value & 0xFFF0FFF0FFF0FFF0L) == 0x0030003000300030L) {
-            return THREE_DIGITS_MUL10[(buf[offset] & 0xf) << 8 | (buf[offset + 1] & 0xf) << 4 | (buf[offset + 2] & 0xf)] + buf[offset + 3];
+            return JSONGeneral.THREE_DIGITS_MUL10[(buf[offset] & 0xf) << 8 | (buf[offset + 1] & 0xf) << 4 | (buf[offset + 2] & 0xf)] + buf[offset + 3];
         }
         return -1;
     }
@@ -215,7 +214,7 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
         int i = offset, cnt = 9, c, c1, nanoOfSecond = 0;
         while ((isDigitFlag = NumberUtils.isDigit(c = buf[i])) && NumberUtils.isDigit(c1 = buf[++i])) {
             cnt -= 2;
-            nanoOfSecond = nanoOfSecond * 100 + twoDigitsValue(c, c1);
+            nanoOfSecond = nanoOfSecond * 100 + JSONGeneral.twoDigitsValue(c, c1);
             ++i;
         }
         if (isDigitFlag) {
@@ -231,20 +230,20 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
 
     protected final static int parseNanoOfSecond(byte[] buf, int offset, JSONParseContext parseContext) {
         int nanoOfSecond;
-        if ((nanoOfSecond = digits2Bytes(buf, offset)) != -1) {
+        if ((nanoOfSecond = JSONGeneral.digits2Bytes(buf, offset)) != -1) {
             long mask;
-            if ((mask = getDigits8Mask(buf, offset += 2)) != 0) {
+            if ((mask = JSONGeneral.getDigits8Mask(buf, offset += 2)) != 0) {
                 int cnt = (EnvUtils.LITTLE_ENDIAN ? Long.numberOfTrailingZeros(mask) >> 3 : Long.numberOfLeadingZeros(mask) >> 3);
                 parseContext.endIndex = offset + cnt;
                 if (cnt == 7) {
                     return nanoOfSecond * 10000000
-                            + (THREE_DIGITS_MUL10[(buf[offset] & 0xf) << 4 | (buf[offset + 1] & 0xf)] + buf[offset + 2]) * 10000
-                            + THREE_DIGITS_MUL10[(buf[offset + 3] & 0xf) << 8 | (buf[offset + 4] & 0xf) << 4 | (buf[offset + 5] & 0xf)] + buf[offset + 6];
+                            + (JSONGeneral.THREE_DIGITS_MUL10[(buf[offset] & 0xf) << 4 | (buf[offset + 1] & 0xf)] + buf[offset + 2]) * 10000
+                            + JSONGeneral.THREE_DIGITS_MUL10[(buf[offset + 3] & 0xf) << 8 | (buf[offset + 4] & 0xf) << 4 | (buf[offset + 5] & 0xf)] + buf[offset + 6];
                 } else {
                     return calculateNextDigits(nanoOfSecond, buf, offset, cnt);
                 }
             } else {
-                String errorContextTextAt = createErrorContextText(buf, offset - 2);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, offset - 2);
                 throw new JSONException("Syntax error, at pos " + offset + ", context text by '" + errorContextTextAt + "', illegal nanoOfSecond out of range(0-999999999)");
             }
         } else {
@@ -254,7 +253,7 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
                 return (c & 0xf) * 100000000;
             }
         }
-        String errorContextTextAt = createErrorContextText(buf, offset);
+        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, offset);
         throw new JSONException("Syntax error, at pos " + offset + ", context text by '" + errorContextTextAt + "', illegal nanoOfSecond");
     }
 
@@ -265,15 +264,15 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
             case 1:
                 return (nanoOfSecond * 10 + (buf[offset] & 0xF)) * 1000000;
             case 2:
-                return (nanoOfSecond * 100 + TWO_DIGITS_VALUES[buf[offset] ^ ((buf[offset + 1] & 0xf) << 4)]) * 100000;
+                return (nanoOfSecond * 100 + JSONGeneral.TWO_DIGITS_VALUES[buf[offset] ^ ((buf[offset + 1] & 0xf) << 4)]) * 100000;
             case 3:
-                return (nanoOfSecond * 1000 + THREE_DIGITS_MUL10[(buf[offset] & 0xf) << 4 | (buf[offset + 1] & 0xf)] + buf[offset + 2]) * 10000;
+                return (nanoOfSecond * 1000 + JSONGeneral.THREE_DIGITS_MUL10[(buf[offset] & 0xf) << 4 | (buf[offset + 1] & 0xf)] + buf[offset + 2]) * 10000;
             case 4:
-                return (nanoOfSecond * 10000 + THREE_DIGITS_MUL10[(buf[offset] & 0xf) << 8 | (buf[offset + 1] & 0xf) << 4 | (buf[offset + 2] & 0xf)] + buf[offset + 3]) * 1000;
+                return (nanoOfSecond * 10000 + JSONGeneral.THREE_DIGITS_MUL10[(buf[offset] & 0xf) << 8 | (buf[offset + 1] & 0xf) << 4 | (buf[offset + 2] & 0xf)] + buf[offset + 3]) * 1000;
             case 5:
-                return (nanoOfSecond * 100000 + (buf[offset] & 0xf) * 10000 + THREE_DIGITS_MUL10[(buf[offset + 1] & 0xf) << 8 | (buf[offset + 2] & 0xf) << 4 | (buf[offset + 3] & 0xf)] + buf[offset + 4]) * 100;
+                return (nanoOfSecond * 100000 + (buf[offset] & 0xf) * 10000 + JSONGeneral.THREE_DIGITS_MUL10[(buf[offset + 1] & 0xf) << 8 | (buf[offset + 2] & 0xf) << 4 | (buf[offset + 3] & 0xf)] + buf[offset + 4]) * 100;
             case 6:
-                return (nanoOfSecond * 1000000 + (TWO_DIGITS_VALUES[buf[offset] ^ ((buf[offset + 1] & 0xf) << 4)]) * 10000 + THREE_DIGITS_MUL10[(buf[offset + 2] & 0xf) << 8 | (buf[offset + 3] & 0xf) << 4 | (buf[offset + 4] & 0xf)] + buf[offset + 5]) * 10;
+                return (nanoOfSecond * 1000000 + (JSONGeneral.TWO_DIGITS_VALUES[buf[offset] ^ ((buf[offset + 1] & 0xf) << 4)]) * 10000 + JSONGeneral.THREE_DIGITS_MUL10[(buf[offset + 2] & 0xf) << 8 | (buf[offset + 3] & 0xf) << 4 | (buf[offset + 4] & 0xf)] + buf[offset + 5]) * 10;
         }
         return nanoOfSecond;
     }
@@ -329,7 +328,7 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
                 year = -year;
                 i += 4;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', year field error ");
             }
         }
@@ -337,71 +336,71 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
             year = year * 10 + (c & 0xf);
         }
         if ((symbol = c) != '-' && symbol != '/' && symbol != '.' && symbol != '~') {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', default symbol error, only support '-' or '/' or '.' or '~', but " + symbol);
         }
-        if ((month = digits2Bytes(buf, ++i)) == -1) {
+        if ((month = JSONGeneral.digits2Bytes(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 month = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', month field error ");
             }
         } else {
             ++i;
         }
         if (buf[++i] != symbol) {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', expect '" + (char) symbol + "', but '" + (char) buf[i] + "'");
         }
-        if ((day = digits2Bytes(buf, ++i)) == -1) {
+        if ((day = JSONGeneral.digits2Bytes(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 day = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', day field error ");
             }
         } else {
             ++i;
         }
         if ((split = buf[++i]) != 'T' && split != ' ') {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', expect 'T' or ' ', but '" + (char) buf[i] + "'");
         }
         // HH:mm:ss
-        if ((hour = digits2Bytes(buf, ++i)) == -1) {
+        if ((hour = JSONGeneral.digits2Bytes(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 hour = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', hour field error ");
             }
         } else {
             ++i;
         }
         if (buf[++i] != ':') {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', expect ':', but '" + (char) buf[i] + "'");
         }
-        if ((minute = digits2Bytes(buf, ++i)) == -1) {
+        if ((minute = JSONGeneral.digits2Bytes(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 minute = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', minute field error ");
             }
         } else {
             ++i;
         }
         if (buf[++i] != ':') {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', expect ':', but '" + (char) buf[i] + "'");
         }
-        if ((second = digits2Bytes(buf, ++i)) == -1) {
+        if ((second = JSONGeneral.digits2Bytes(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 second = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', second field error ");
             }
         } else {
@@ -428,7 +427,7 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
                 year = -year;
                 i += 4;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', year field error ");
             }
         }
@@ -436,71 +435,71 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
             year = year * 10 + (c & 0xf);
         }
         if ((symbol = c) != '-' && symbol != '/' && symbol != '.' && symbol != '~') {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', default symbol error, only support '-' or '/' or '.' or '~', but " + symbol);
         }
-        if ((month = digits2Chars(buf, ++i)) == -1) {
+        if ((month = JSONGeneral.digits2Chars(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 month = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', month field error ");
             }
         } else {
             ++i;
         }
         if (buf[++i] != symbol) {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', expect '" + symbol + "', but '" + buf[i] + "'");
         }
-        if ((day = digits2Chars(buf, ++i)) == -1) {
+        if ((day = JSONGeneral.digits2Chars(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 day = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', day field error ");
             }
         } else {
             ++i;
         }
         if ((split = buf[++i]) != 'T' && split != ' ') {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', expect 'T' or ' ', but '" + buf[i] + "'");
         }
         // HH:mm:ss
-        if ((hour = digits2Chars(buf, ++i)) == -1) {
+        if ((hour = JSONGeneral.digits2Chars(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 hour = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', hour field error ");
             }
         } else {
             ++i;
         }
         if (buf[++i] != ':') {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', expect ':', but '" + buf[i] + "'");
         }
-        if ((minute = digits2Chars(buf, ++i)) == -1) {
+        if ((minute = JSONGeneral.digits2Chars(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 minute = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', minute field error ");
             }
         } else {
             ++i;
         }
         if (buf[++i] != ':') {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', expect ':', but '" + buf[i] + "'");
         }
-        if ((second = digits2Chars(buf, ++i)) == -1) {
+        if ((second = JSONGeneral.digits2Chars(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 second = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', second field error ");
             }
         } else {
@@ -513,5 +512,13 @@ public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {
         }
         parseContext.endIndex = i;
         return LocalDateTime.of(year, month, day, hour, minute, second);
+    }
+
+    protected final static int digits2Bytes(byte[] buf, int offset) {
+        return JSONGeneral.digits2Bytes(buf, offset);
+    }
+
+    protected final static int digits2Chars(char[] buf, int offset) {
+        return JSONGeneral.digits2Chars(buf, offset);
     }
 }

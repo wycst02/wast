@@ -1,5 +1,8 @@
 package io.github.wycst.wast.json;
 
+import io.github.wycst.wast.json.options.ReadOption;
+import io.github.wycst.wast.json.options.ReadOptionConfig;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,19 +16,27 @@ import java.util.List;
 public final class JSONNodeContext extends JSONParseContext {
 
     JSONNodeContext() {
-        allowLastEndComma = true;
-        allowSingleQuotes = true;
-        allowUnquotedFieldNames = true;
+        // allowLastEndComma, allowSingleQuotes, allowUnquotedFieldNames
+        super(ReadOptionConfig.LAX_ALE_ASQ_AUFN);
+    }
+
+    JSONNodeContext(ReadOption[] readOptions) {
+        super(ReadOptionConfig.of(readOptions));
+    }
+
+    JSONNodeContext(ReadOption[] readOptions, String input) {
+        super(ReadOptionConfig.of(readOptions), input);
     }
 
     /***
      * 提取模式（提取路径的根对象）
      */
-    public boolean extract;
+    boolean extract;
     /**
      * 提取数据列表
      */
-    public List<Object> extractValues;
+    List<Object> extractValues;
+    int elementSize;
     JSONNodeCollector collector;
     private JSONKeyValueMap<String> KEY_32_TABLE;
     static final JSONKeyValueMap<String> GLOBAL_KEY_8_TABLE = new JSONKeyValueMap<String>(2048);
@@ -39,6 +50,14 @@ public final class JSONNodeContext extends JSONParseContext {
             writer.clear();
         }
         return writer;
+    }
+
+    protected void setElementSize(int elementSize) {
+        this.elementSize = elementSize;
+    }
+
+    public int getElementSize() {
+        return elementSize;
     }
 
     static String getString(char[] chars, int offset, int len) {

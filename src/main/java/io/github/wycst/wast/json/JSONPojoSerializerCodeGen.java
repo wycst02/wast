@@ -74,7 +74,7 @@ final class JSONPojoSerializerCodeGen {
 
         fmatOutHeaderBuilder.append("\t\tboolean isEmptyFlag = !checkWriteClassName(jsonConfig.isWriteClassName(), writer, pojoClass, true, indentLevel, jsonConfig);\n");
         fmatOutHeaderBuilder.append("\t\tint indentPlus = indentLevel + 1;\n");
-        fmatOutHeaderBuilder.append("\t\tboolean formatOutColonSpace = jsonConfig.formatOutColonSpace;\n");
+        fmatOutHeaderBuilder.append("\t\tboolean formatOutColonSpace = jsonConfig.isFormatOutColonSpace();\n");
 
         JSONPojoFieldSerializer[] fieldSerializerUseMethods = jsonPojoStructure.getFieldSerializers(false);
         // fieldsDefinitionBuilder.append("\n");
@@ -965,8 +965,8 @@ final class JSONPojoSerializerCodeGen {
                             compactBodyBuilder.append("\t\t\twriter.writeDoubleArray(" + valueVar + ");\n");
                         } else if (returnType == long[].class) {
                             compactBodyBuilder.append("\t\t\twriter.writeLongArray(" + valueVar + ", jsonConfig);\n");
-                        } else if (fieldSerializer.isStringCollection()) {
-                            compactBodyBuilder.append("\t\t\twriter.writeStringCollection(" + valueVar + ");\n");
+                        } else if (fieldSerializer.isStringList()) {
+                            compactBodyBuilder.append("\t\t\twriter.writeStringList(" + valueVar + ");\n");
                         } else if (returnType == UUID.class) {
                             compactBodyBuilder.append("\t\t\twriter.writeUUID(" + valueVar + ");\n");
                         } else if (Date.class.isAssignableFrom(returnType)) {
@@ -1320,7 +1320,7 @@ final class JSONPojoSerializerCodeGen {
             fmatOutBodyBuilder.append(tabFlag).append("\t\twriteDoubleArrayFormatOut(writer, " + valueVar + ", jsonConfig, indentPlus);\n");
         } else if (returnType == long[].class) {
             fmatOutBodyBuilder.append(tabFlag).append("\t\twriteLongArrayFormatOut(writer, " + valueVar + ", jsonConfig, indentPlus);\n");
-        } else if (fieldSerializer.isStringCollection()) {
+        } else if (fieldSerializer.isStringList()) {
             fmatOutBodyBuilder.append(tabFlag).append("\t\twriteStringCollectionFormatOut(writer, " + valueVar + ", jsonConfig, indentPlus);\n");
         } else if (returnType == UUID.class) {
             fmatOutBodyBuilder.append(tabFlag).append("\t\twriter.writeUUID(" + valueVar + ");\n");

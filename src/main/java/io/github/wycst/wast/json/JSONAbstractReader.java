@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @see JSONNode
  * @see JSONCharArrayWriter
  */
-abstract class JSONAbstractReader extends JSONGeneral {
+abstract class JSONAbstractReader {
 
     /**
      * Current pointer position in the entire stream (absolute position)
@@ -54,7 +54,7 @@ abstract class JSONAbstractReader extends JSONGeneral {
     /**
      * capacity
      */
-    int bufferSize = DIRECT_READ_BUFFER_SIZE;
+    int bufferSize = JSONGeneral.DIRECT_READ_BUFFER_SIZE;
 
     /**
      * The actual readable length of the buffer character array
@@ -71,7 +71,7 @@ abstract class JSONAbstractReader extends JSONGeneral {
      */
     int current;
     JSONReaderHook readerHook;
-    final JSONParseContext parseContext = new JSONParseContext();
+    JSONParseContext parseContext = new JSONParseContext();
     final StringBuilder writer = new StringBuilder();
     ReadOption[] readOptions = new ReadOption[0];
     Object result;
@@ -87,7 +87,7 @@ abstract class JSONAbstractReader extends JSONGeneral {
     boolean multiple;
 
     public void setOptions(ReadOption... readOptions) {
-        JSONOptions.readOptions(this.readOptions = readOptions, parseContext);
+        parseContext = JSONParseContext.of(readOptions);
     }
 
     public void setTimeout(long timeout) {
@@ -370,7 +370,7 @@ abstract class JSONAbstractReader extends JSONGeneral {
     }
 
     private Number readNumber(char endSyntax) throws Exception {
-        final boolean useBigDecimal = parseContext.useBigDecimalAsDefault;
+        final boolean useBigDecimal = parseContext.optionConfig.useBigDecimalAsDefault;
         if (useBigDecimal) {
             writer.setLength(0);
             writer.append((char) current);
@@ -508,7 +508,7 @@ abstract class JSONAbstractReader extends JSONGeneral {
     }
 
     private Object readArray() throws Exception {
-        Collection arrayList = new ArrayList();
+        Collection<Object> arrayList = new ArrayList<Object>();
 //        int elementIndex = 0;
         for (; ; ) {
             clearWhitespaces();
@@ -613,7 +613,7 @@ abstract class JSONAbstractReader extends JSONGeneral {
                 }
                 instance = classStrucWrap.newInstance();
             } else if (classCategory == ReflectConsts.ClassCategory.MapCategory) {
-                instance = map = createMapInstance(genericType);
+                instance = map = JSONGeneral.createMapInstance(genericType);
                 valueType = genericType.getValueType();
                 if (valueType == null) {
                     valueType = GenericParameterizedType.AnyType;
@@ -767,7 +767,7 @@ abstract class JSONAbstractReader extends JSONGeneral {
                                 valueType = GenericParameterizedType.actualType(actualType);
                             }
                         } else {
-                            collection = createCollectionInstance(collectionCls);
+                            collection = JSONGeneral.createCollectionInstance(collectionCls);
                         }
                     }
                     instance = collection;
@@ -784,7 +784,7 @@ abstract class JSONAbstractReader extends JSONGeneral {
             actualType = valueType.getActualType();
             elementPrimitive = actualType.isPrimitive();
 
-            instance = collection = isArrayCls ? new ArrayList<Object>() : createCollectionInstance(collectionCls);
+            instance = collection = isArrayCls ? new ArrayList<Object>() : JSONGeneral.createCollectionInstance(collectionCls);
         } while (false);
 
         int elementIndex = 0;
@@ -991,13 +991,9 @@ abstract class JSONAbstractReader extends JSONGeneral {
         endReading(n, -1);
     }
 
-    /**
-     * @param n         End offset correction position
-     * @param newOffset
-     */
     abstract void endReading(int n, int newOffset);
 
-    private Object parseNumberTo(Object simpleValue, GenericParameterizedType valueType) {
+    private Object parseNumberTo(Object simpleValue, GenericParameterizedType<?> valueType) {
         if (simpleValue == null) return null;
         ReflectConsts.ClassCategory classCategory;
         if (valueType == null || (classCategory = valueType.getActualClassCategory()) == ReflectConsts.ClassCategory.ANY) {
@@ -1038,7 +1034,7 @@ abstract class JSONAbstractReader extends JSONGeneral {
             readerHook.parseValue(key, value, instance, -1, nextPath, type);
         } else {
             if (setterInfo != null) {
-                JSON_SECURE_TRUSTED_ACCESS.set(setterInfo, instance, value);
+                JSONGeneral.JSON_SECURE_TRUSTED_ACCESS.set(setterInfo, instance, value);
             } else {
                 if (map != null) {
                     map.put(key, value);
@@ -1125,7 +1121,7 @@ abstract class JSONAbstractReader extends JSONGeneral {
                         int c4 = readNext(true);
                         long c64;
                         try {
-                            c64 = hex4ToLong(c1, c2, c3, c4);
+                            c64 = JSONGeneral.hex4ToLong(c1, c2, c3, c4);
                             if (c64 < 0) {
                                 throw new JSONException("Syntax error, from pos " + offset + ", invalid unicode " + new String(new char[]{(char) c1, (char) c2, (char) c3, (char) c4}));
                             }
@@ -1172,36 +1168,16 @@ abstract class JSONAbstractReader extends JSONGeneral {
         return current;
     }
 
-    /**
-     * Clear white space characters until non empty characters
-     *
-     * @throws IOException
-     */
     private void clearWhitespaces() throws Exception {
         while (readNext() > -1 && current <= ' ') ;
     }
 
-    /**
-     * whether the reading completed
-     *
-     * @return
-     */
     abstract boolean isCompleted();
 
-    /**
-     * return the result of parsing
-     *
-     * @return
-     */
     public Object getResult() {
         return getResult(timeout);
     }
 
-    /**
-     * return the result of parsing
-     *
-     * @return
-     */
     public Object getResult(long timeout) {
         if (async) {
             long threadId = Thread.currentThread().getId();

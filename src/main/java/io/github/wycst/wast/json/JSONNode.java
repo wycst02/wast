@@ -780,7 +780,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
                 return fieldValues.get(fieldName);
             }
             char ch;
-            final boolean allowComment = parseContext.allowComment, extract = parseContext.extract;
+            final boolean allowComment = parseContext.optionConfig.allowComment, extract = parseContext.extract;
             final boolean stored = !extract || !lazy;
             for (int i = offset + 1; i < endIndex; ++i) {
                 try {
@@ -818,11 +818,11 @@ public abstract class JSONNode implements Comparable<JSONNode> {
                             // parseContext.allowSingleQuotes
                             while (i + 1 < endIndex && (buf[++i] != '\'' || buf[i - 1] == '\\')) ;
                             ++i;
-                            key = (String) JSONDefaultParser.parseKeyOfMap(buf, fieldKeyFrom, i, false);
+                            key = (String) JSONGeneral.parseKeyOfMap(buf, fieldKeyFrom, i, false);
                         } else {
                             // parseContext.allowUnquotedFieldNames
                             while (i + 1 < endIndex && buf[++i] != ':') ;
-                            key = String.valueOf(JSONDefaultParser.parseKeyOfMap(buf, fieldKeyFrom, i, true));
+                            key = String.valueOf(JSONGeneral.parseKeyOfMap(buf, fieldKeyFrom, i, true));
                         }
                         matched = fieldName != null && fieldName.equals(key);
                         skipValue = !stored && !matched;
@@ -894,7 +894,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             int beginIndex = fromIndex + 1, toIndex = endIndex;
             char ch;
             String key;
-            final boolean allowComment = parseContext.allowComment;
+            final boolean allowComment = parseContext.optionConfig.allowComment;
             Map<Serializable, JSONNode> fieldValues = new LinkedHashMap<Serializable, JSONNode>();
 
             JSONNode objectNode = new C(charSource, fieldValues, buf, fromIndex, -1, parseContext, root);
@@ -992,7 +992,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             char ch;
             JSONNode[] elementValues = new JSONNode[8];
             int elementSize = 0;
-            boolean allowComment = parseContext.allowComment;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             JSONNode arrayNode = new C(charSource, buf, fromIndex, parseContext, root);
             List list = null;
             if (createObj) {
@@ -1108,7 +1108,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
 
         JSONNode parseArrayAt(int index, boolean lazy, boolean createObj) {
             char ch;
-            boolean allowComment = parseContext.allowComment, matchedIndex;
+            boolean allowComment = parseContext.optionConfig.allowComment, matchedIndex;
             for (int i = offset + 1; i < endIndex; ++i) {
                 try {
                     while ((ch = buf[i]) <= ' ') {
@@ -1260,7 +1260,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
                 return fieldValues.get(fieldName);
             }
             byte b;
-            final boolean allowComment = parseContext.allowComment, extract = parseContext.extract;
+            final boolean allowComment = parseContext.optionConfig.allowComment, extract = parseContext.extract;
             final boolean stored = !extract || !lazy;
             final byte[] fieldNameBytes = (!stored && fieldName != null) ? JSONMemoryHandle.getStringUTF8Bytes(fieldName) : null;
             for (int i = offset + 1; i < endIndex; ++i) {
@@ -1301,11 +1301,11 @@ public abstract class JSONNode implements Comparable<JSONNode> {
                             // parseContext.allowSingleQuotes
                             while (i + 1 < endIndex && (buf[++i] != '\'' || buf[i - 1] == '\\')) ;
                             ++i;
-                            key = (String) JSONDefaultParser.parseKeyOfMap(buf, fieldKeyFrom, i, false);
+                            key = (String) JSONGeneral.parseKeyOfMap(buf, fieldKeyFrom, i, false);
                         } else {
                             // parseContext.allowUnquotedFieldNames
                             while (i + 1 < endIndex && buf[++i] != ':') ;
-                            key = String.valueOf(JSONDefaultParser.parseKeyOfMap(buf, fieldKeyFrom, i, true));
+                            key = String.valueOf(JSONGeneral.parseKeyOfMap(buf, fieldKeyFrom, i, true));
                         }
                         matched = fieldName != null && fieldName.equals(key);
                         skipValue = !stored && !matched;
@@ -1377,7 +1377,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             int beginIndex = fromIndex + 1, toIndex = endIndex;
             byte b;
             String key;
-            boolean allowComment = parseContext.allowComment;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             Map<Serializable, JSONNode> fieldValues = new LinkedHashMap<Serializable, JSONNode>();
 
             JSONNode objectNode = new B(charSource, fieldValues, buf, fromIndex, -1, parseContext, root);
@@ -1412,7 +1412,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
                         // parseContext.allowUnquotedFieldNames
                         int begin = i;
                         while (i + 1 < toIndex && buf[++i] != ':') ;
-                        key = String.valueOf(JSONDefaultParser.parseKeyOfMap(buf, begin, i, true));
+                        key = String.valueOf(JSONGeneral.parseKeyOfMap(buf, begin, i, true));
                     }
                 }
                 while ((b = buf[i]) <= ' ') {
@@ -1477,7 +1477,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             byte b;
             JSONNode[] elementValues = new JSONNode[8];
             int elementSize = 0;
-            boolean allowComment = parseContext.allowComment;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             JSONNode arrayNode = new B(charSource, buf, fromIndex, parseContext, root);
             List list = null;
             if (createObj) {
@@ -1592,7 +1592,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
 
         JSONNode parseArrayAt(int index, boolean lazy, boolean createObj) {
             byte ch;
-            boolean allowComment = parseContext.allowComment, matchedIndex;
+            boolean allowComment = parseContext.optionConfig.allowComment, matchedIndex;
             for (int i = offset + 1; i < endIndex; ++i) {
                 try {
                     while ((ch = buf[i]) <= ' ') {
@@ -1710,17 +1710,16 @@ public abstract class JSONNode implements Comparable<JSONNode> {
         if (bytes == null)
             return null;
         try {
-            JSONNodeContext parseContext = new JSONNodeContext();
-            JSONOptions.readOptions(readOptions, parseContext);
-            parseContext.toIndex = bytes.length;
             JSONNode root;
             if (EnvUtils.JDK_9_PLUS) {
+                JSONNodeContext parseContext = new JSONNodeContext(readOptions, JSONMemoryHandle.createAsciiString(bytes));
                 if (!EnvUtils.JDK_AGENT_INSTANCE.hasNegatives(bytes, 0, bytes.length)) {
-                    root = new B(AsciiStringSource.of(JSONMemoryHandle.createAsciiString(bytes)), bytes, 0, bytes.length, parseContext);
+                    root = new B(CharSource.ASCII, bytes, 0, bytes.length, parseContext);
                 } else {
-                    root = new B(UTF8CharSource.of(JSONMemoryHandle.createAsciiString(bytes)), bytes, 0, bytes.length, parseContext);
+                    root = new B(CharSource.UTF8, bytes, 0, bytes.length, parseContext);
                 }
             } else {
+                JSONNodeContext parseContext = new JSONNodeContext(readOptions);
                 root = new B(null, bytes, 0, bytes.length, parseContext);
             }
             if (path == null) {
@@ -1740,19 +1739,17 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             return null;
         source = source.trim();
         try {
-            JSONNodeContext parseContext = new JSONNodeContext();
-            JSONOptions.readOptions(readOptions, parseContext);
-            parseContext.toIndex = source.length();
             JSONNode root;
             if (EnvUtils.JDK_9_PLUS) {
                 byte[] bytes = (byte[]) JSONMemoryHandle.getStringValue(source);
                 if (bytes.length == source.length()) {
-                    root = new B(AsciiStringSource.of(source), bytes, 0, bytes.length, parseContext);
+                    root = new B(CharSource.ASCII, bytes, 0, bytes.length, new JSONNodeContext(readOptions, source));
                 } else {
                     char[] chars = source.toCharArray();
-                    root = new C(UTF16ByteArraySource.of(source), chars, 0, chars.length, parseContext);
+                    root = new C(CharSource.UTF16, chars, 0, chars.length, new JSONNodeContext(readOptions, source));
                 }
             } else {
+                JSONNodeContext parseContext = new JSONNodeContext(readOptions);
                 char[] chars = (char[]) JSONMemoryHandle.getStringValue(source);
                 root = new C(null, chars, 0, chars.length, parseContext);
             }
@@ -1780,13 +1777,13 @@ public abstract class JSONNode implements Comparable<JSONNode> {
         if (EnvUtils.JDK_9_PLUS) {
             byte[] bytes = (byte[]) JSONMemoryHandle.getStringValue(json.toString());
             if (bytes.length == json.length()) {
-                return parseInternal(AsciiStringSource.of(json), bytes, JSONNodePath.parse(path), readOptions);
+                return parseInternal(CharSource.ASCII, bytes, JSONNodePath.parse(path), new JSONNodeContext(readOptions, json));
             } else {
                 char[] chars = json.toCharArray();
-                return parseInternal(UTF16ByteArraySource.of(json), chars, JSONNodePath.parse(path), readOptions);
+                return parseInternal(CharSource.UTF16, chars, JSONNodePath.parse(path), new JSONNodeContext(readOptions, json));
             }
         } else {
-            return parseInternal(null, (char[]) JSONMemoryHandle.getStringValue(json.toString()), JSONNodePath.parse(path), readOptions);
+            return parseInternal(null, (char[]) JSONMemoryHandle.getStringValue(json.toString()), JSONNodePath.parse(path), new JSONNodeContext(readOptions));
         }
     }
 
@@ -1801,12 +1798,12 @@ public abstract class JSONNode implements Comparable<JSONNode> {
     public final static JSONNode from(byte[] bytes, String path, ReadOption... readOptions) {
         if (EnvUtils.JDK_9_PLUS) {
             if (!EnvUtils.JDK_AGENT_INSTANCE.hasNegatives(bytes, 0, bytes.length)) {
-                return parseInternal(AsciiStringSource.of(JSONMemoryHandle.createAsciiString(bytes)), bytes, JSONNodePath.parse(path), readOptions);
+                return parseInternal(CharSource.ASCII, bytes, JSONNodePath.parse(path), new JSONNodeContext(readOptions, JSONMemoryHandle.createAsciiString(bytes)));
             } else {
-                return parseInternal(UTF8CharSource.of(JSONMemoryHandle.createAsciiString(bytes)), bytes, JSONNodePath.parse(path), readOptions);
+                return parseInternal(CharSource.UTF8, bytes, JSONNodePath.parse(path), new JSONNodeContext(readOptions, JSONMemoryHandle.createAsciiString(bytes)));
             }
         } else {
-            return parseInternal(null, bytes, JSONNodePath.parse(path), readOptions);
+            return parseInternal(null, bytes, JSONNodePath.parse(path), new JSONNodeContext(readOptions));
         }
     }
 
@@ -1823,22 +1820,16 @@ public abstract class JSONNode implements Comparable<JSONNode> {
      * @param readOptions
      * @return
      */
-    final static JSONNode parseInternal(CharSource charSource, char[] buf, JSONNodePath path, ReadOption... readOptions) {
+    final static JSONNode parseInternal(CharSource charSource, char[] buf, JSONNodePath path, JSONNodeContext parseContext) {
         int toIndex = buf.length;
-        JSONNodeContext parseContext = new JSONNodeContext();
-        JSONOptions.readOptions(readOptions, parseContext);
-        parseContext.toIndex = toIndex;
         if (path == null) {
             return new C(charSource, buf, 0, toIndex, parseContext);
         }
         return parseNode(charSource, buf, path, parseContext);
     }
 
-    final static JSONNode parseInternal(CharSource charSource, byte[] buf, JSONNodePath path, ReadOption... readOptions) {
+    final static JSONNode parseInternal(CharSource charSource, byte[] buf, JSONNodePath path, JSONNodeContext parseContext) {
         int toIndex = buf.length;
-        JSONNodeContext parseContext = new JSONNodeContext();
-        JSONOptions.readOptions(readOptions, parseContext);
-        parseContext.toIndex = toIndex;
         if (path == null) {
             return new B(charSource, buf, 0, toIndex, parseContext);
         }
@@ -1894,14 +1885,14 @@ public abstract class JSONNode implements Comparable<JSONNode> {
         if (EnvUtils.JDK_9_PLUS) {
             byte[] bytes = (byte[]) JSONMemoryHandle.getStringValue(json.toString());
             if (bytes.length == json.length()) {
-                return extractInternal(AsciiStringSource.of(json), bytes, path, nodeCollector, readOptions);
+                return extractInternal(CharSource.ASCII, bytes, path, nodeCollector, new JSONNodeContext(readOptions, json));
             } else {
                 // utf16
                 char[] chars = json.toCharArray();
-                return extractInternal(UTF16ByteArraySource.of(json), chars, path, nodeCollector, readOptions);
+                return extractInternal(CharSource.UTF16, chars, path, nodeCollector, new JSONNodeContext(readOptions, json));
             }
         } else {
-            return extractInternal(null, (char[]) JSONMemoryHandle.getStringValue(json.toString()), path, nodeCollector, readOptions);
+            return extractInternal(null, (char[]) JSONMemoryHandle.getStringValue(json.toString()), path, nodeCollector, new JSONNodeContext(readOptions));
         }
     }
 
@@ -1921,28 +1912,22 @@ public abstract class JSONNode implements Comparable<JSONNode> {
     public final static <T> List<T> extract(byte[] bytes, JSONNodePath path, JSONNodeCollector<T> nodeCollector, ReadOption... readOptions) {
         if (EnvUtils.JDK_9_PLUS) {
             if (!EnvUtils.JDK_AGENT_INSTANCE.hasNegatives(bytes, 0, bytes.length)) {
-                return extractInternal(AsciiStringSource.of(JSONMemoryHandle.createAsciiString(bytes)), bytes, path, nodeCollector, readOptions);
+                return extractInternal(CharSource.ASCII, bytes, path, nodeCollector, new JSONNodeContext(readOptions, JSONMemoryHandle.createAsciiString(bytes)));
             } else {
-                return extractInternal(UTF8CharSource.of(JSONMemoryHandle.createAsciiString(bytes)), bytes, path, nodeCollector, readOptions);
+                return extractInternal(CharSource.UTF8, bytes, path, nodeCollector, new JSONNodeContext(readOptions, JSONMemoryHandle.createAsciiString(bytes)));
             }
         } else {
-            return extractInternal(null, bytes, path, nodeCollector, readOptions);
+            return extractInternal(null, bytes, path, nodeCollector, new JSONNodeContext(readOptions));
         }
     }
 
-    static List extractInternal(CharSource charSource, char[] buf, JSONNodePath path, JSONNodeCollector nodeCollector, ReadOption... readOptions) {
-        JSONNodeContext parseContext = new JSONNodeContext();
-        JSONOptions.readOptions(readOptions, parseContext);
-        parseContext.toIndex = buf.length;
+    static List extractInternal(CharSource charSource, char[] buf, JSONNodePath path, JSONNodeCollector nodeCollector, JSONNodeContext parseContext) {
         parseContext.enableExtract(nodeCollector.self());
         parseNode(charSource, buf, path, parseContext);
         return parseContext.extractValues;
     }
 
-    static List extractInternal(CharSource charSource, byte[] buf, JSONNodePath path, JSONNodeCollector nodeCollector, ReadOption... readOptions) {
-        JSONNodeContext parseContext = new JSONNodeContext();
-        JSONOptions.readOptions(readOptions, parseContext);
-        parseContext.toIndex = buf.length;
+    static List extractInternal(CharSource charSource, byte[] buf, JSONNodePath path, JSONNodeCollector nodeCollector, JSONNodeContext parseContext) {
         parseContext.enableExtract(nodeCollector.self());
         parseNode(charSource, buf, path, parseContext);
         return parseContext.extractValues;
@@ -1961,7 +1946,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             while ((toIndex > fromIndex) && buf[toIndex - 1] <= ' ') {
                 toIndex--;
             }
-            boolean allowComment = parseContext.allowComment;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             if (allowComment && beginChar == '/') {
                 /** 去除声明在头部的注释*/
                 fromIndex = JSONGeneral.clearCommentAndWhiteSpaces(buf, fromIndex + 1, parseContext);
@@ -2012,7 +1997,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             while ((toIndex > fromIndex) && buf[toIndex - 1] <= ' ') {
                 toIndex--;
             }
-            if (parseContext.allowComment && beginByte == '/') {
+            if (parseContext.optionConfig.allowComment && beginByte == '/') {
                 /** 去除声明在头部的注释*/
                 fromIndex = JSONGeneral.clearCommentAndWhiteSpaces(buf, fromIndex + 1, parseContext);
                 beginByte = buf[fromIndex];
@@ -2053,7 +2038,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
         int beginIndex = fromIndex + 1, mr;
         char ch;
         String key;
-        final boolean allowComment = parseContext.allowComment, extract = parseContext.extract;
+        final boolean allowComment = parseContext.optionConfig.allowComment, extract = parseContext.extract;
         boolean matched, returnValueIfMatched;
         boolean isLastPathLevel = pathCollector.next == null;
         for (int i = beginIndex; ; ++i) {
@@ -2089,7 +2074,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
                     // parseContext.allowUnquotedFieldNames
                     int begin = i;
                     while (buf[++i] != ':') ;
-                    key = String.valueOf(JSONDefaultParser.parseKeyOfMap(buf, begin, i, true));
+                    key = String.valueOf(JSONGeneral.parseKeyOfMap(buf, begin, i, true));
                     mr = pathCollector.matchedObjectField(key);
                 }
             }
@@ -2205,7 +2190,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
         int beginIndex = fromIndex + 1, mr;
         byte b;
         String key;
-        final boolean allowComment = parseContext.allowComment, extract = parseContext.extract;
+        final boolean allowComment = parseContext.optionConfig.allowComment, extract = parseContext.extract;
         boolean matched, returnValueIfMatched;
         boolean isLastPathLevel = pathCollector.next == null;
         for (int i = beginIndex; ; ++i) {
@@ -2242,7 +2227,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
                     // parseContext.allowUnquotedFieldNames
                     int begin = i;
                     while (/*i + 1 < toIndex &&*/ buf[++i] != ':') ;
-                    key = String.valueOf(JSONDefaultParser.parseKeyOfMap(buf, begin, i, true));
+                    key = String.valueOf(JSONGeneral.parseKeyOfMap(buf, begin, i, true));
                     mr = pathCollector.matchedObjectField(key);
                 }
             }
@@ -2358,7 +2343,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
     private static JSONNode parseArrayPathNode(CharSource charSource, char[] buf, int fromIndex, int toIndex, JSONNodePath nodePath, JSONNodePathCollector pathCollector, final boolean returnIfMatched, JSONNodeContext parseContext) throws Exception {
         int beginIndex = fromIndex + 1;
         char ch;
-        final boolean allowComment = parseContext.allowComment, extract = parseContext.extract;
+        final boolean allowComment = parseContext.optionConfig.allowComment, extract = parseContext.extract;
         int elementIndex = 0;
         boolean returnValueIfMatched;
         int size = -1;
@@ -2476,7 +2461,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
     private static JSONNode parseArrayPathNode(CharSource charSource, byte[] buf, int fromIndex, int toIndex, JSONNodePath nodePath, JSONNodePathCollector pathCollector, boolean returnIfMatched, JSONNodeContext parseContext) throws Exception {
         int beginIndex = fromIndex + 1;
         byte b;
-        final boolean allowComment = parseContext.allowComment, extract = parseContext.extract;
+        final boolean allowComment = parseContext.optionConfig.allowComment, extract = parseContext.extract;
         int elementIndex = 0;
         boolean returnValueIfMatched;
         int size = -1;
@@ -2652,7 +2637,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             JSONTypeDeserializer.NUMBER_SKIPPER.deserialize(charSource, buf, fromIndex, null, null, endToken, parseContext);
             return null;
         }
-        Number value = (Number) JSONTypeDeserializer.NUMBER.deserialize(charSource, buf, fromIndex, parseContext.useBigDecimalAsDefault ? GenericParameterizedType.BigDecimalType : GenericParameterizedType.AnyType, null, endToken, parseContext);
+        Number value = (Number) JSONTypeDeserializer.NUMBER.deserialize(charSource, buf, fromIndex, parseContext.optionConfig.useBigDecimalAsDefault ? GenericParameterizedType.BigDecimalType : GenericParameterizedType.AnyType, null, endToken, parseContext);
         int endIndex = parseContext.endIndex;
         return new C(charSource, value, buf, fromIndex, endIndex + 1, NUMBER, parseContext, rootNode);
     }
@@ -2662,7 +2647,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             JSONTypeDeserializer.NUMBER_SKIPPER.deserialize(charSource, buf, fromIndex, null, null, endToken, parseContext);
             return null;
         }
-        Number value = (Number) JSONTypeDeserializer.NUMBER.deserialize(charSource, buf, fromIndex, parseContext.useBigDecimalAsDefault ? GenericParameterizedType.BigDecimalType : GenericParameterizedType.AnyType, null, endToken, parseContext);
+        Number value = (Number) JSONTypeDeserializer.NUMBER.deserialize(charSource, buf, fromIndex, parseContext.optionConfig.useBigDecimalAsDefault ? GenericParameterizedType.BigDecimalType : GenericParameterizedType.AnyType, null, endToken, parseContext);
         int endIndex = parseContext.endIndex;
         return new B(charSource, value, buf, fromIndex, endIndex + 1, NUMBER, parseContext, rootNode);
     }
@@ -3417,7 +3402,7 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             }
             if (eClass == byte[].class) {
                 String text = getText();
-                if (parseContext.byteArrayFromHexString) {
+                if (parseContext.optionConfig.byteArrayFromHexString) {
                     return (E) hexString2Bytes();
                 } else {
                     return (E) Base64Utils.decode(text);

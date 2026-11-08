@@ -115,7 +115,7 @@ final class JSONStore {
         // Default serializer
         TYPE_SERIALIZERS[ReflectConsts.ClassCategory.CharSequence.ordinal()] = JSONTypeSerializer.CHAR_SEQUENCE;
         TYPE_SERIALIZERS[ReflectConsts.ClassCategory.NumberCategory.ordinal()] = JSONTypeSerializer.NUMBER;
-        TYPE_SERIALIZERS[ReflectConsts.ClassCategory.BoolCategory.ordinal()] = JSONTypeSerializer.SIMPLE;
+        TYPE_SERIALIZERS[ReflectConsts.ClassCategory.BoolCategory.ordinal()] = JSONTypeSerializer.BOOLEAN;
         TYPE_SERIALIZERS[ReflectConsts.ClassCategory.DateCategory.ordinal()] = JSONTypeSerializer.DATE;
         TYPE_SERIALIZERS[ReflectConsts.ClassCategory.ClassCategory.ordinal()] = JSONTypeSerializer.CLASS;
         TYPE_SERIALIZERS[ReflectConsts.ClassCategory.EnumCategory.ordinal()] = JSONTypeSerializer.ENUM;
@@ -307,7 +307,7 @@ final class JSONStore {
         switch (classCategory) {
             case CollectionCategory:
                 // collection Deserializer instance
-                int collectionType = JSONTypeDeserializer.getCollectionType(genericParameterizedType.getActualType());
+                int collectionType = JSONGeneral.getCollectionType(genericParameterizedType.getActualType());
                 switch (collectionType) {
                     case JSONGeneral.COLLECTION_ARRAYLIST_TYPE:
                         return new JSONTypeDeserializer.CollectionImpl.ArrayListImpl(this, genericParameterizedType);

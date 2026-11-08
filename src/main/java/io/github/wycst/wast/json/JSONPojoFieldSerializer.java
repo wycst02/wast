@@ -7,6 +7,7 @@ import io.github.wycst.wast.common.utils.EnvUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -95,8 +96,9 @@ public class JSONPojoFieldSerializer {
         }
     }
 
-    public boolean isStringCollection() {
-        if (classCategory == ReflectConsts.ClassCategory.CollectionCategory) {
+    public boolean isStringList() {
+        if (classCategory == ReflectConsts.ClassCategory.CollectionCategory
+                && List.class.isAssignableFrom(getterInfo.getReturnType())) {
             GenericParameterizedType<?> parameterizedType = getterInfo.getGenericParameterizedType();
             return parameterizedType != null && parameterizedType.getValueType() == GenericParameterizedType.StringType;
         }

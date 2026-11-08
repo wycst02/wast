@@ -346,6 +346,19 @@ class JSONCharArrayWriter extends JSONWriter {
     }
 
     @Override
+    public void writeBoolean(boolean value) throws IOException {
+        ensureCapacity(5 + SECURITY_UNCHECK_SPACE);
+        int count = this.count;
+        if(value) {
+            count += JSONMemoryHandle.putLong(buf, count, JSONGeneral.TRUE_LONG);
+        } else {
+            buf[count++] = 'f';
+            count += JSONMemoryHandle.putLong(buf, count, JSONGeneral.ALSE_LONG);
+        }
+        this.count = count;
+    }
+
+    @Override
     public final void writeLong(long numValue) throws IOException {
         ensureCapacity(20 + SECURITY_UNCHECK_SPACE);
         if (numValue < 1) {

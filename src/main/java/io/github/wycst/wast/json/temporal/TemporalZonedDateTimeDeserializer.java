@@ -4,6 +4,7 @@ import io.github.wycst.wast.common.beans.GeneralDate;
 import io.github.wycst.wast.common.reflect.GenericParameterizedType;
 import io.github.wycst.wast.common.reflect.UnsafeHelper;
 import io.github.wycst.wast.common.utils.NumberUtils;
+import io.github.wycst.wast.json.JSONGeneral;
 import io.github.wycst.wast.json.JSONParseContext;
 import io.github.wycst.wast.json.JSONTemporalDeserializer;
 import io.github.wycst.wast.json.exceptions.JSONException;
@@ -77,7 +78,7 @@ public class TemporalZonedDateTimeDeserializer extends JSONTemporalDeserializer 
                 break;
             }
         }
-        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, ZERO_TIME_ZONE);
+        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, JSONGeneral.ZERO_TIME_ZONE);
         Object zoneObject;
         if (zoneId == null) {
             // default
@@ -105,7 +106,7 @@ public class TemporalZonedDateTimeDeserializer extends JSONTemporalDeserializer 
                 break;
             }
         }
-        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, ZERO_TIME_ZONE);
+        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, JSONGeneral.ZERO_TIME_ZONE);
         Object zoneObject;
         if (zoneId == null) {
             // default
@@ -151,7 +152,7 @@ public class TemporalZonedDateTimeDeserializer extends JSONTemporalDeserializer 
             parseContext.endIndex = i;
             return ofTemporalDateTime(localDateTime, zoneObject);
         }
-        String errorContextTextAt = createErrorContextText(buf, i);
+        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected token '" + c + "', expected '" + endToken + "'");
     }
 
@@ -188,7 +189,7 @@ public class TemporalZonedDateTimeDeserializer extends JSONTemporalDeserializer 
             parseContext.endIndex = i;
             return ofTemporalDateTime(localDateTime, zoneObject);
         }
-        String errorContextTextAt = createErrorContextText(buf, i);
+        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected token '" + (char) c + "', expected '" + (char) endToken + "'");
     }
 

@@ -5,6 +5,7 @@ import io.github.wycst.wast.common.beans.GeneralDate;
 import io.github.wycst.wast.common.beans.GregorianDate;
 import io.github.wycst.wast.common.reflect.GenericParameterizedType;
 import io.github.wycst.wast.common.utils.NumberUtils;
+import io.github.wycst.wast.json.JSONGeneral;
 import io.github.wycst.wast.json.JSONParseContext;
 import io.github.wycst.wast.json.JSONTemporalDeserializer;
 import io.github.wycst.wast.json.exceptions.JSONException;
@@ -31,13 +32,13 @@ public class TemporalLocalDateDeserializer extends JSONTemporalDeserializer {
 
     protected Object deserializeTemporal(char[] buf, int fromIndex, int endIndex, JSONParseContext jsonParseContext) throws Exception {
         // use dateTemplate && pattern
-        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, ZERO_TIME_ZONE);
+        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, JSONGeneral.ZERO_TIME_ZONE);
         return LocalDate.of(generalDate.getYear(), generalDate.getMonth(), generalDate.getDay());
     }
 
     protected Object deserializeTemporal(byte[] buf, int fromIndex, int endIndex, JSONParseContext jsonParseContext) throws Exception {
         // use dateTemplate && pattern
-        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, ZERO_TIME_ZONE);
+        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, JSONGeneral.ZERO_TIME_ZONE);
         return LocalDate.of(generalDate.getYear(), generalDate.getMonth(), generalDate.getDay());
     }
 
@@ -67,7 +68,7 @@ public class TemporalLocalDateDeserializer extends JSONTemporalDeserializer {
                 year = -year;
                 i += 4;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', year field error ");
             }
         }
@@ -75,28 +76,28 @@ public class TemporalLocalDateDeserializer extends JSONTemporalDeserializer {
             year = year * 10 + (c & 0xf);
         }
         if ((symbol = c) != '-' && symbol != '/' && symbol != '.' && symbol != '~') {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', default symbol error, only support '-' or '/' or '.' or '~', but " + symbol);
         }
         if ((month = digits2Chars(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 month = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', month field error ");
             }
         } else {
             ++i;
         }
         if (buf[++i] != symbol) {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', expect '" + symbol + "', but '" + buf[i] + "'");
         }
         if ((day = digits2Chars(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 day = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', day field error ");
             }
         } else {
@@ -106,7 +107,7 @@ public class TemporalLocalDateDeserializer extends JSONTemporalDeserializer {
             jsonParseContext.endIndex = i;
             return LocalDate.of(year, month, day);
         }
-        String errorContextTextAt = createErrorContextText(buf, i);
+        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected token '" + buf[i] + "', expected '" + (char) endToken + "'");
     }
 
@@ -136,7 +137,7 @@ public class TemporalLocalDateDeserializer extends JSONTemporalDeserializer {
                 year = -year;
                 i += 4;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', year field error ");
             }
         }
@@ -144,28 +145,28 @@ public class TemporalLocalDateDeserializer extends JSONTemporalDeserializer {
             year = year * 10 + (c & 0xf);
         }
         if ((symbol = c) != '-' && symbol != '/' && symbol != '.' && symbol != '~') {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', default symbol error, only support '-' or '/' or '.' or '~', but " + symbol);
         }
         if ((month = digits2Bytes(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 month = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', month field error ");
             }
         } else {
             ++i;
         }
         if (buf[++i] != symbol) {
-            String errorContextTextAt = createErrorContextText(buf, i);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', expect '" + (char) symbol + "', but '" + (char) buf[i] + "'");
         }
         if ((day = digits2Bytes(buf, ++i)) == -1) {
             if (NumberUtils.isDigit(c = buf[i])) {
                 day = c & 0xf;
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', day field error ");
             }
         } else {
@@ -175,7 +176,7 @@ public class TemporalLocalDateDeserializer extends JSONTemporalDeserializer {
             jsonParseContext.endIndex = i;
             return LocalDate.of(year, month, day);
         }
-        String errorContextTextAt = createErrorContextText(buf, i);
+        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected token '" + (char) buf[i] + "', expected '" + (char) endToken + "'");
     }
 

@@ -10,7 +10,7 @@ final class JSONMemoryHandle {
 
     static final JSONEndian JSON_ENDIAN;
     static final JSONEndian JSON_ENDIAN_RAW;
-    static final JSONEndian JSON_ENDIAN_UNSAFE;
+    static final JSONEndianUnsafe JSON_ENDIAN_UNSAFE;
 
     static {
         JSON_ENDIAN_UNSAFE = EnvUtils.BIG_ENDIAN ? new JSONEndianBigUnsafe() : new JSONEndianLittleUnsafe();
@@ -68,25 +68,6 @@ final class JSONMemoryHandle {
             byte[] result = new byte[len];
             System.arraycopy(buf, offset, result, 0, len);
             return result;
-        }
-
-//        /**
-//         * 8个字节以内的数据拷贝（注意sOff和dOff都大于0）
-//         *
-//         * @param src
-//         * @param sOff
-//         * @param dst
-//         * @param dOff
-//         * @param len (len < 8)
-//         */
-//        protected void copyRemBytes(byte[] src, int sOff, byte[] dst, int dOff, int len) {
-//            putLong(dst, dOff - 8 + len, getLong(src, sOff - 8 + len));
-//        }
-
-        void multipleCopyMemory(byte[] source, long sourceOff, byte[] target, long targetOff) {
-        }
-
-        void copyMemory(byte[] source, int sourceOff, byte[] target, int targetOff) {
         }
 
         public char[] asciiBytesToChars(byte[] buf, int offset, int len) {
@@ -169,11 +150,6 @@ final class JSONMemoryHandle {
                 return new byte[]{buf[offset]};
             }
 
-//            @Override
-//            protected void copyRemBytes(byte[] src, int sOff, byte[] dst, int dOff, int len) {
-//                dst[dOff] = src[sOff];
-//            }
-
             @Override
             public String[] copy(String[] buf, int offset, int len) {
                 return new String[]{buf[offset]};
@@ -187,15 +163,6 @@ final class JSONMemoryHandle {
             @Override
             public long[] copy(long[] buf, int offset, int len) {
                 return new long[]{buf[offset]};
-            }
-
-            void multipleCopyMemory(byte[] source, long sourceOff, byte[] target, long targetOff) {
-                // TODO
-//                UNSAFE.putLong(target, targetOff, UNSAFE.getLong(source, sourceOff));
-            }
-
-            void copyMemory(byte[] source, int sourceOff, byte[] target, int targetOff) {
-                target[targetOff] = source[sourceOff];
             }
 
             @Override
@@ -235,17 +202,6 @@ final class JSONMemoryHandle {
             @Override
             public long[] copy(long[] buf, int offset, int len) {
                 return new long[]{buf[offset++], buf[offset]};
-            }
-
-            void multipleCopyMemory(byte[] source, long sourceOff, byte[] target, long targetOff) {
-                // TODO
-//                UNSAFE.putLong(target, targetOff, UNSAFE.getLong(source, sourceOff));
-//                UNSAFE.putLong(target, targetOff + 8, UNSAFE.getLong(source, sourceOff + 8));
-            }
-
-            void copyMemory(byte[] source, int sourceOff, byte[] target, int targetOff) {
-//                UNSAFE.putShort(target, BYTE_ARRAY_OFFSET + targetOff, UNSAFE.getShort(source, BYTE_ARRAY_OFFSET + sourceOff));
-                JSON_ENDIAN.putShort(target, targetOff, JSON_ENDIAN.getShort(source, sourceOff));
             }
 
             @Override
@@ -289,19 +245,6 @@ final class JSONMemoryHandle {
                 return new long[]{buf[offset++], buf[offset++], buf[offset]};
             }
 
-            void multipleCopyMemory(byte[] source, long sourceOff, byte[] target, long targetOff) {
-                // TODO
-//                UNSAFE.putLong(target, targetOff, UNSAFE.getLong(source, sourceOff));
-//                UNSAFE.putLong(target, targetOff + 8, UNSAFE.getLong(source, sourceOff + 8));
-//                UNSAFE.putLong(target, targetOff + 16, UNSAFE.getLong(source, sourceOff + 16));
-            }
-
-            void copyMemory(byte[] source, int sourceOff, byte[] target, int targetOff) {
-                JSON_ENDIAN.putShort(target, targetOff, JSON_ENDIAN.getShort(source, sourceOff));
-//                UNSAFE.putShort(target, BYTE_ARRAY_OFFSET + targetOff, UNSAFE.getShort(source, BYTE_ARRAY_OFFSET + sourceOff));
-                target[targetOff + 2] = source[sourceOff + 2];
-            }
-
             @Override
             public char[] asciiBytesToChars(byte[] buf, int offset, int len) {
                 return new char[]{(char) buf[offset++], (char) buf[offset++], (char) buf[offset]};
@@ -339,19 +282,6 @@ final class JSONMemoryHandle {
             @Override
             public long[] copy(long[] buf, int offset, int len) {
                 return new long[]{buf[offset++], buf[offset++], buf[offset++], buf[offset]};
-            }
-
-            void multipleCopyMemory(byte[] source, long sourceOff, byte[] target, long targetOff) {
-                // todo
-//                UNSAFE.putLong(target, targetOff, UNSAFE.getLong(source, sourceOff));
-//                UNSAFE.putLong(target, targetOff + 8, UNSAFE.getLong(source, sourceOff + 8));
-//                UNSAFE.putLong(target, targetOff + 16, UNSAFE.getLong(source, sourceOff + 16));
-//                UNSAFE.putLong(target, targetOff + 24, UNSAFE.getLong(source, sourceOff + 24));
-            }
-
-            void copyMemory(byte[] source, int sourceOff, byte[] target, int targetOff) {
-                JSON_ENDIAN.putInt(target, targetOff, JSON_ENDIAN.getInt(source, sourceOff));
-//                UNSAFE.putInt(target, BYTE_ARRAY_OFFSET + targetOff, UNSAFE.getInt(source, BYTE_ARRAY_OFFSET + sourceOff));
             }
 
             @Override
@@ -395,21 +325,6 @@ final class JSONMemoryHandle {
                 return new long[]{buf[offset++], buf[offset++], buf[offset++], buf[offset++], buf[offset]};
             }
 
-            void multipleCopyMemory(byte[] source, long sourceOff, byte[] target, long targetOff) {
-                // TODO
-//                UNSAFE.putLong(target, targetOff, UNSAFE.getLong(source, sourceOff));
-//                UNSAFE.putLong(target, targetOff + 8, UNSAFE.getLong(source, sourceOff + 8));
-//                UNSAFE.putLong(target, targetOff + 16, UNSAFE.getLong(source, sourceOff + 16));
-//                UNSAFE.putLong(target, targetOff + 24, UNSAFE.getLong(source, sourceOff + 24));
-//                UNSAFE.putLong(target, targetOff + 32, UNSAFE.getLong(source, sourceOff + 32));
-            }
-
-            void copyMemory(byte[] source, int sourceOff, byte[] target, int targetOff) {
-                JSON_ENDIAN.putInt(target, targetOff, JSON_ENDIAN.getInt(source, sourceOff));
-//                UNSAFE.putInt(target, BYTE_ARRAY_OFFSET + targetOff, UNSAFE.getInt(source, BYTE_ARRAY_OFFSET + sourceOff));
-                target[targetOff + 4] = source[sourceOff + 4];
-            }
-
             @Override
             public char[] asciiBytesToChars(byte[] buf, int offset, int len) {
                 return new char[]{(char) buf[offset++], (char) buf[offset++], (char) buf[offset++], (char) buf[offset++], (char) buf[offset]};
@@ -449,23 +364,6 @@ final class JSONMemoryHandle {
             @Override
             public long[] copy(long[] buf, int offset, int len) {
                 return new long[]{buf[offset++], buf[offset++], buf[offset++], buf[offset++], buf[offset++], buf[offset]};
-            }
-
-            void multipleCopyMemory(byte[] source, long sourceOff, byte[] target, long targetOff) {
-                // TODO
-//                UNSAFE.putLong(target, targetOff, UNSAFE.getLong(source, sourceOff));
-//                UNSAFE.putLong(target, targetOff + 8, UNSAFE.getLong(source, sourceOff + 8));
-//                UNSAFE.putLong(target, targetOff + 16, UNSAFE.getLong(source, sourceOff + 16));
-//                UNSAFE.putLong(target, targetOff + 24, UNSAFE.getLong(source, sourceOff + 24));
-//                UNSAFE.putLong(target, targetOff + 32, UNSAFE.getLong(source, sourceOff + 32));
-//                UNSAFE.putLong(target, targetOff + 40, UNSAFE.getLong(source, sourceOff + 40));
-            }
-
-            void copyMemory(byte[] source, int sourceOff, byte[] target, int targetOff) {
-                JSON_ENDIAN.putInt(target, targetOff, JSON_ENDIAN.getInt(source, sourceOff));
-                JSON_ENDIAN.putShort(target, targetOff + 4, JSON_ENDIAN.getShort(source, sourceOff + 4));
-//                UNSAFE.putInt(target, BYTE_ARRAY_OFFSET + targetOff, UNSAFE.getInt(source, BYTE_ARRAY_OFFSET + sourceOff));
-//                UNSAFE.putShort(target, BYTE_ARRAY_OFFSET + targetOff + 4, UNSAFE.getShort(source, BYTE_ARRAY_OFFSET + sourceOff + 4));
             }
 
             @Override
@@ -508,25 +406,6 @@ final class JSONMemoryHandle {
                 return new long[]{buf[offset++], buf[offset++], buf[offset++], buf[offset++], buf[offset++], buf[offset++], buf[offset]};
             }
 
-            void multipleCopyMemory(byte[] source, long sourceOff, byte[] target, long targetOff) {
-                // TODO
-//                UNSAFE.putLong(target, targetOff, UNSAFE.getLong(source, sourceOff));
-//                UNSAFE.putLong(target, targetOff + 8, UNSAFE.getLong(source, sourceOff + 8));
-//                UNSAFE.putLong(target, targetOff + 16, UNSAFE.getLong(source, sourceOff + 16));
-//                UNSAFE.putLong(target, targetOff + 24, UNSAFE.getLong(source, sourceOff + 24));
-//                UNSAFE.putLong(target, targetOff + 32, UNSAFE.getLong(source, sourceOff + 32));
-//                UNSAFE.putLong(target, targetOff + 40, UNSAFE.getLong(source, sourceOff + 40));
-//                UNSAFE.putLong(target, targetOff + 48, UNSAFE.getLong(source, sourceOff + 48));
-            }
-
-            void copyMemory(byte[] source, int sourceOff, byte[] target, int targetOff) {
-                JSON_ENDIAN.putInt(target, targetOff, JSON_ENDIAN.getInt(source, sourceOff));
-                JSON_ENDIAN.putShort(target, targetOff + 4, JSON_ENDIAN.getShort(source, sourceOff + 4));
-//                UNSAFE.putInt(target, BYTE_ARRAY_OFFSET + targetOff, UNSAFE.getInt(source, BYTE_ARRAY_OFFSET + sourceOff));
-//                UNSAFE.putShort(target, BYTE_ARRAY_OFFSET + targetOff + 4, UNSAFE.getShort(source, BYTE_ARRAY_OFFSET + sourceOff + 4));
-                target[targetOff + 6] = source[sourceOff + 6];
-            }
-
             @Override
             public char[] asciiBytesToChars(byte[] buf, int offset, int len) {
                 return new char[]{(char) buf[offset++], (char) buf[offset++], (char) buf[offset++], (char) buf[offset++], (char) buf[offset++], (char) buf[offset++], (char) buf[offset]};
@@ -565,23 +444,6 @@ final class JSONMemoryHandle {
             @Override
             public long[] copy(long[] buf, int offset, int len) {
                 return new long[]{buf[offset++], buf[offset++], buf[offset++], buf[offset++], buf[offset++], buf[offset++], buf[offset++], buf[offset]};
-            }
-
-            void multipleCopyMemory(byte[] source, long sourceOff, byte[] target, long targetOff) {
-                // TODO
-//                UNSAFE.putLong(target, targetOff, UNSAFE.getLong(source, sourceOff));
-//                UNSAFE.putLong(target, targetOff + 8, UNSAFE.getLong(source, sourceOff + 8));
-//                UNSAFE.putLong(target, targetOff + 16, UNSAFE.getLong(source, sourceOff + 16));
-//                UNSAFE.putLong(target, targetOff + 24, UNSAFE.getLong(source, sourceOff + 24));
-//                UNSAFE.putLong(target, targetOff + 32, UNSAFE.getLong(source, sourceOff + 32));
-//                UNSAFE.putLong(target, targetOff + 40, UNSAFE.getLong(source, sourceOff + 40));
-//                UNSAFE.putLong(target, targetOff + 48, UNSAFE.getLong(source, sourceOff + 48));
-//                UNSAFE.putLong(target, targetOff + 56, UNSAFE.getLong(source, sourceOff + 56));
-            }
-
-            void copyMemory(byte[] source, int sourceOff, byte[] target, int targetOff) {
-                JSON_ENDIAN.putLong(target, targetOff, JSON_ENDIAN.getLong(source, sourceOff));
-//                UNSAFE.putLong(target, BYTE_ARRAY_OFFSET + targetOff, UNSAFE.getLong(source, BYTE_ARRAY_OFFSET + sourceOff));
             }
 
             @Override
@@ -1207,9 +1069,8 @@ final class JSONMemoryHandle {
         return results;
     }
 
-    public static Object getStringValue(String value) {
-//        return JSON_ENDIAN.getStringValue(value);
-        return JSON_ENDIAN_UNSAFE.getStringValue(value);
+    static Object getStringValue(String value) {
+        return JSON_ENDIAN_UNSAFE.getStringValue(value.toString());
     }
 
     static String createStringJDK8(char[] buf, int beginIndex, int len) {
@@ -1229,20 +1090,6 @@ final class JSONMemoryHandle {
         }
         return JSON_ENDIAN_UNSAFE.createStringJDK8(result);
     }
-
-//    /**
-//     * 8个字节以内的数据拷贝（注意sOff和dOff都大于0）
-//     *
-//     * @param src
-//     * @param sOff
-//     * @param dst
-//     * @param dOff
-//     * @param len (len < 8)
-//     */
-//    static void copyRemBytes(byte[] src, int sOff, byte[] dst, int dOff, int len) {
-//        // SIZE_INSTANCES[len].copyRemBytes(src, sOff, dst, dOff, len);
-//        putLong(dst, dOff - 8 + len, getLong(src, sOff - 8 + len));
-//    }
 
     static int asciiBytesToChars(byte[] buf, int beginIndex, int endIndex, char[] chars, int offset) {
         int len = endIndex - beginIndex;
@@ -1267,21 +1114,6 @@ final class JSONMemoryHandle {
             return SIZE_INSTANCES[len].copyBytes(buf, offset, len);
         } else {
             byte[] bytes = new byte[len];
-//            if (len < 72) {
-//                int rem = len & 7;
-//                int t = len >> 3;
-//                long sourceOff = BYTE_ARRAY_OFFSET + offset;
-//                SIZE_INSTANCES[t].multipleCopyMemory(buf, sourceOff, bytes, BYTE_ARRAY_OFFSET);
-//                if(rem > 4) {
-//                    int remOffset = (t << 3) - 8 + rem;
-//                    putLong(bytes, remOffset, getLong(buf, offset + remOffset));
-//                } else if(rem > 0) {
-//                    int remOffset = (t << 3) - 4 + rem;
-//                    putInt(bytes, remOffset, getInt(buf, offset + remOffset));
-//                }
-//                return bytes;
-//            } else {
-//            }
             System.arraycopy(buf, offset, bytes, 0, len);
             return bytes;
         }
@@ -1307,14 +1139,6 @@ final class JSONMemoryHandle {
         }
     }
 
-    /**
-     * 拷贝long数组
-     *
-     * @param buf
-     * @param offset
-     * @param len
-     * @return
-     */
     public static long[] copyLongs(long[] buf, int offset, int len) {
         if (len < SIZE_LEN) {
             return SIZE_INSTANCES[len].copy(buf, offset, len);
@@ -1335,7 +1159,7 @@ final class JSONMemoryHandle {
 
     static byte[] getStringUTF8Bytes(String value) {
         if (EnvUtils.JDK_9_PLUS) {
-            byte[] bytes = (byte[]) getStringValue(value.toString());
+            byte[] bytes = (byte[]) getStringValue(value);
             if (bytes.length == value.length()) {
                 return bytes;
             }
@@ -1343,19 +1167,6 @@ final class JSONMemoryHandle {
         return value.getBytes(EnvUtils.CHARSET_UTF8_OR_DEF);
     }
 
-    /**
-     * <p> 高效比较两个字节数组片段 </p>
-     * <p>
-     * Refer to ArraysSupport # vectorizedMismatch
-     *
-     * @param a
-     * @param aOffset
-     * @param b
-     * @param bOffset
-     * @param len
-     * @return
-     * @throws IndexOutOfBoundsException
-     */
     public static boolean equals(byte[] a, int aOffset, byte[] b, int bOffset, int len, long remValueForBytes) {
         if (len >= 8) {
             do {
@@ -1393,19 +1204,6 @@ final class JSONMemoryHandle {
         }
     }
 
-    /**
-     * <p> 高效比较两个字符数组片段 </p>
-     * <p>
-     * Refer to ArraysSupport # vectorizedMismatch
-     *
-     * @param a
-     * @param aOffset
-     * @param b
-     * @param bOffset
-     * @param len
-     * @return
-     * @throws IndexOutOfBoundsException
-     */
     public static boolean equals(char[] a, int aOffset, char[] b, int bOffset, int len, long remValueForChars) {
         if (len >= 4) {
             do {

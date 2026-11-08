@@ -11,10 +11,7 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.util.Collection;
-import java.util.Date;
-import java.util.TimeZone;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class JSONWriter extends Writer {
@@ -143,6 +140,9 @@ public abstract class JSONWriter extends Writer {
         }
     };
 
+    private Map<Integer, Integer> circularStatus;
+    private static final Integer CIRCULAR_SERIALIZING = 0;
+
     static JSONWriter forStringWriter(JSONConfig jsonConfig) {
         if (jsonConfig.isIgnoreEscapeCheck()) {
             return new JSONCharArrayWriter.IgnoreEscapeWriter();
@@ -189,7 +189,40 @@ public abstract class JSONWriter extends Writer {
     protected abstract boolean endsWith(int c);
 
     void reset() {
+        circularStatus = null;
     }
+
+    /**
+     * Mark obj as serializing; returns true if a circular reference is detected (caller should writeNull and return).
+     */
+    boolean enterCircular(Object obj) {
+        if (circularStatus == null) {
+            circularStatus = new HashMap<Integer, Integer>();
+        }
+        int hashcode = System.identityHashCode(obj);
+        if (circularStatus.get(hashcode) == CIRCULAR_SERIALIZING) {
+            return true;
+        }
+        circularStatus.put(hashcode, CIRCULAR_SERIALIZING);
+        return false;
+    }
+
+    /**
+     * Clear the serializing mark after obj serialization completed.
+     */
+    void exitCircular(Object obj) {
+        circularStatus.remove(System.identityHashCode(obj));
+    }
+
+//    /**
+//     * Manually release the pooled writer buffers for application users.
+//     * Forces all pooled writer instances to shrink their internal buffers on next reset,
+//     * reclaiming cached memory back to the pool.
+//     */
+//    public static void resetAllPooledBuffers() {
+//        JSONCharArrayWriter.resetAllPooledBuf();
+//        JSONByteArrayWriter.resetAllPooledBuf();
+//    }
 
     public void clear() {
     }
@@ -227,13 +260,13 @@ public abstract class JSONWriter extends Writer {
     /**
      * write zoneId(zoneOffset)
      *
-     * @param zoneId
-     * @throws IOException
+     * @param zoneId zoneId
+     * @throws IOException io exception
      */
     public final void writeZoneId(String zoneId) throws IOException {
         if (zoneId == null) return;
         // zoneID
-        if (zoneId.length() > 0) {
+        if (!zoneId.isEmpty()) {
             char c = zoneId.charAt(0);
             switch (c) {
                 case 'Z': {
@@ -254,13 +287,6 @@ public abstract class JSONWriter extends Writer {
         }
     }
 
-    /**
-     * Ensure the call is secure.
-     *
-     * @param c
-     * @throws IOException
-     * @throws IndexOutOfBoundsException
-     */
     public void writeJSONToken(char c) throws IOException {
         write(c);
     }
@@ -268,6 +294,10 @@ public abstract class JSONWriter extends Writer {
     public abstract void writeShortChars(char[] chars, int offset, int len) throws IOException;
 
     public abstract void writeLong(long numValue) throws IOException;
+
+    public void writeBoolean(boolean value) throws IOException {
+        writeLatinString(String.valueOf(value));
+    }
 
     /**
      * supported write number as string
@@ -379,18 +409,15 @@ public abstract class JSONWriter extends Writer {
     }
 
     // only use by JIT compact
-    public final void writeStringCollection(Collection values) throws IOException {
+    public final void writeStringList(List<?> values) throws IOException {
         int size = values.size();
         if (size > 0) {
             writeJSONToken('[');
-            boolean hasAddFlag = false;
-            for (Object value : values) {
-                if (hasAddFlag) {
+            for (int i = 0; i < size; ++i) {
+                if (i > 0) {
                     writeJSONToken(',');
-                } else {
-                    hasAddFlag = true;
                 }
-                writeStringCompatibleNull((String) value);
+                writeStringCompatibleNull((String) values.get(i));
             }
             writeJSONToken(']');
         } else {
@@ -1284,7 +1311,7 @@ public abstract class JSONWriter extends Writer {
             return writeInteger((int) val, chars, off);
         }
         final int beginIndex = off;
-        long high = EnvUtils.JDK_AGENT_INSTANCE.multiplyHigh(val, 0x55e63b88c230e77fL) >> 25, low = val - high * 100000000L;  // value / 100000000L
+        long high = EnvUtils.JDK_AGENT_INSTANCE.multiplyHighKaratsuba(val, 0x55e63b88c230e77fL) >> 25, low = val - high * 100000000L;  // value / 100000000L
         int l1 = (int) (low * 1759218605L >> 44), l2 = (int) (low - l1 * 10000);
         if (high < 0x80000000L) {
             off += writeInteger((int) high, chars, off);
@@ -1406,7 +1433,7 @@ public abstract class JSONWriter extends Writer {
             return writeInteger((int) val, buf, off);
         }
         final int beginIndex = off;
-        long high = EnvUtils.JDK_AGENT_INSTANCE.multiplyHigh(val, 0x55e63b88c230e77fL) >> 25, low = val - high * 100000000L;  // value / 100000000L
+        long high = EnvUtils.JDK_AGENT_INSTANCE.multiplyHighKaratsuba(val, 0x55e63b88c230e77fL) >> 25, low = val - high * 100000000L;  // value / 100000000L
         int l1 = (int) (low * 1759218605L >> 44), l2 = (int) (low - l1 * 10000);
         if (high < 0x80000000L) {
             off += writeInteger((int) high, buf, off);

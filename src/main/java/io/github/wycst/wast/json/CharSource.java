@@ -8,31 +8,11 @@ package io.github.wycst.wast.json;
  * @Description:
  */
 public interface CharSource {
+    CharSource ASCII = new AsciiStringSource();
+    CharSource UTF8 = new UTF8CharSource();
+    CharSource UTF16 = new UTF16ByteArraySource();
 
-    /**
-     * 返回输入字符串
-     *
-     * @return
-     */
-    String input();
+    String substring(String input, byte[] bytes, int beginIndex, int endIndex);
 
-    /**
-     * 构建子串
-     *
-     * @param bytes
-     * @param beginIndex
-     * @param endIndex
-     * @return
-     */
-    String substring(byte[] bytes, int beginIndex, int endIndex);
-
-    /**
-     * 将字串写入writer
-     *
-     * @param writer
-     * @param buf
-     * @param offset
-     * @param len
-     */
-    void writeString(JSONCharArrayWriter writer, byte[] buf, int offset, int len);
+    void writeString(JSONCharArrayWriter writer, String input, byte[] buf, int offset, int len);
 }

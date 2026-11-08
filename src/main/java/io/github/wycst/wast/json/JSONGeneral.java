@@ -25,7 +25,7 @@ import java.util.*;
  * @Date 2021/12/7 19:30
  */
 @SuppressWarnings({"all"})
-class JSONGeneral {
+public final class JSONGeneral {
 
     // Format output character pool
     static final char[] FORMAT_OUT_SYMBOL_TABS = "\n\t\t\t\t\t\t\t\t\t\t".toCharArray();
@@ -72,13 +72,7 @@ class JSONGeneral {
     protected final static long DOUBLE_QUOTE_CHAR_MASK = 0x0022002200220022L; // 0xFFDDFFDDFFDDFFDDL
     protected final static long SINGLE_QUOTE_CHAR_MASK = 0x0027002700270027L; // 0xFFD8FFD8FFD8FFD8L
 
-//    protected final static long BACKSLASH_MASK = 0xA3A3A3A3A3A3A3A3L;
-
-    final static int TYPE_BIGDECIMAL = 1;
-    final static int TYPE_BIGINTEGER = 2;
-    final static int TYPE_FLOAT = 3;
-    final static int TYPE_DOUBLE = 4;
-
+    //    protected final static long BACKSLASH_MASK = 0xA3A3A3A3A3A3A3A3L;
     final static String[] ESCAPE_VALUES = new String[256];
     final static boolean[] NO_ESCAPE_FLAGS = new boolean[256];
 
@@ -106,8 +100,8 @@ class JSONGeneral {
         ESCAPE_CHARS['u'] = -1;
     }
 
-    protected final static int DIRECT_READ_BUFFER_SIZE = 8192;
-    final static Map<String, TimeZone> GMT_TIME_ZONE_MAP = new ArrayQueueMap<String, TimeZone>(512);
+    public final static int DIRECT_READ_BUFFER_SIZE = 8192;
+    final static Map<String, TimeZone> GMT_TIME_ZONE_MAP = new ArrayQueueMap<String, TimeZone>(256);
 
     // zero zone
     public final static TimeZone ZERO_TIME_ZONE = TimeZone.getTimeZone("GMT+00:00");
@@ -155,10 +149,10 @@ class JSONGeneral {
     protected final static int[] TWO_DIGITS_VALUES = new int[256];
     protected final static int[] THREE_DIGITS_MUL10 = new int[10 << 8];  // 2560
 
+    public final static boolean ENABLE_VECTOR;
+    public final static boolean SUPPORTED_INTRINSIC_CANDIDATE;
     protected final static JSONUtil JSON_UTIL;
-    protected final static boolean ENABLE_VECTOR;
     protected static boolean ENABLE_JIT;
-    protected final static boolean SUPPORTED_INTRINSIC_CANDIDATE;
 
     static {
         for (int i = 0; i < ESCAPE_VALUES.length; ++i) {
@@ -281,7 +275,7 @@ class JSONGeneral {
      * @param l （48-57）
      * @return
      */
-    protected static final int twoDigitsValue(int h, int l) {
+    public static final int twoDigitsValue(int h, int l) {
         return TWO_DIGITS_VALUES[h ^ (l & 0xf) << 4];
     }
 
@@ -1467,7 +1461,7 @@ class JSONGeneral {
      * @see ReadOption#AllowComment
      */
     protected final static int clearCommentAndWhiteSpaces(char[] buf, int beginIndex, JSONParseContext parseContext) {
-        int i = beginIndex, toIndex = parseContext.toIndex;
+        int i = beginIndex, toIndex = buf.length;
         if (i >= toIndex) {
             throw new JSONException("Syntax error, unexpected '/', position " + (beginIndex - 1));
         }
@@ -1524,7 +1518,7 @@ class JSONGeneral {
      * @see ReadOption#AllowComment
      */
     protected static int clearCommentAndWhiteSpaces(byte[] bytes, int beginIndex, JSONParseContext parseContext) {
-        int i = beginIndex, toIndex = parseContext.toIndex;
+        int i = beginIndex, toIndex = bytes.length;
         if (i >= toIndex) {
             throw new JSONException("Syntax error, unexpected '/', position " + (beginIndex - 1));
         }
@@ -1757,7 +1751,7 @@ class JSONGeneral {
             }
             if (numberFlag && pointFlag <= 1) {
                 if (pointFlag == 1) {
-                    return parseFloats(buf, from, from + count, true);
+                    return parseFloats(buf, from, from + count, null, true);
                 } else {
                     long val = Long.parseLong(new String(buf, from, count));
                     if (val <= Integer.MAX_VALUE && val >= Integer.MIN_VALUE) {
@@ -1811,7 +1805,7 @@ class JSONGeneral {
             }
             if (numberFlag && pointFlag <= 1) {
                 if (pointFlag == 1) {
-                    return parseFloats(buf, from, from + count, true);
+                    return parseFloats(buf, from, from + count, null, true);
                 } else {
                     long val = Long.parseLong(new String(buf, from, count));
                     if (val <= Integer.MAX_VALUE && val >= Integer.MIN_VALUE) {
@@ -1982,40 +1976,6 @@ class JSONGeneral {
         }
     }
 
-//    protected final static ArrayList ofArrayList(Object v1, Object v2) {
-//        ArrayList list = new ArrayList(2);
-//        list.add(v1);
-//        list.add(v2);
-//        return list;
-//    }
-//
-//    protected final static ArrayList ofArrayList(Object v1, Object v2, Object v3) {
-//        ArrayList list = new ArrayList(3);
-//        list.add(v1);
-//        list.add(v2);
-//        list.add(v3);
-//        return list;
-//    }
-//
-//    protected final static ArrayList ofArrayList(Object v1, Object v2, Object v3, Object v4) {
-//        ArrayList list = new ArrayList(4);
-//        list.add(v1);
-//        list.add(v2);
-//        list.add(v3);
-//        list.add(v4);
-//        return list;
-//    }
-//
-//    protected final static ArrayList ofArrayList(int cap, Object v1, Object v2, Object v3, Object v4, Object v5) {
-//        ArrayList list = new ArrayList(cap);
-//        list.add(v1);
-//        list.add(v2);
-//        list.add(v3);
-//        list.add(v4);
-//        list.add(v5);
-//        return list;
-//    }
-
     protected final static Collection createCollectionInstance(Class<?> collectionCls) {
         return createCollectionInstance(collectionCls, 0);
     }
@@ -2092,7 +2052,7 @@ class JSONGeneral {
         return null;
     }
 
-    protected static String createErrorContextText(char[] buf, int at) {
+    public static String createErrorContextText(char[] buf, int at) {
         try {
             int len = buf.length;
             char[] text = new char[40];
@@ -2109,7 +2069,7 @@ class JSONGeneral {
         }
     }
 
-    protected static String createErrorContextText(byte[] bytes, int at) {
+    public static String createErrorContextText(byte[] bytes, int at) {
         try {
             int len = bytes.length;
             byte[] text = new byte[40];
@@ -2138,21 +2098,10 @@ class JSONGeneral {
         return UnsafeHelper.getChars(value);
     }
 
-    /**
-     * get value
-     *
-     * @param value
-     * @return
-     */
     protected final static Object getStringValue(String value) {
         return JSONMemoryHandle.getStringValue(value.toString());
     }
 
-    /**
-     * 是否启用JDK16+字符串的indexOf方法加速(@IntrinsicCandidate)
-     *
-     * @return
-     */
     protected static final boolean supportedIntrinsicCandidateTest() {
         if (!EnvUtils.JDK_16_PLUS) {
             return false;
@@ -2163,9 +2112,9 @@ class JSONGeneral {
         return true;
     }
 
-    final static double parseFloats(byte[] buf, final int offset, final int endIndex, boolean doubleFlag) {
+    final static double parseFloats(byte[] buf, final int offset, final int endIndex, JSONParseContext parseContext, boolean doubleFlag) {
+        int i = offset, zeroIndex = 0, decimalPointIndex = endIndex, cnt = 0, decimalCount = 0, zeroDecimalCount = 0, c, v, e10 = 0;
         try {
-            int i = offset, zeroIndex = 0, decimalPointIndex = endIndex, cnt = 0, decimalCount = 0, zeroDecimalCount = 0, c, v, e10 = 0;
             long value = 0L;
             boolean negative, expNegative = false;
             // 清除前置的空白
@@ -2253,13 +2202,12 @@ class JSONGeneral {
                     case 'f':
                     case 'D':
                     case 'd': {
-                        // 清除后置的空白
                         while (++i < endIndex && (c = buf[i]) <= ' ') ;
-                        if (i == endIndex) break label_double_al;
-                        throw new JSONException("error floats input: \"" + new String(buf) + "\"");
                     }
                     default: {
-                        throw new JSONException("error floats input: \"" + new String(buf) + "\"");
+                        if (i == endIndex || (parseContext != null && (c == ',' || c == ']' || c == '}')))
+                            break label_double_al;
+                        throw new JSONException("error floats input: \"" + new String(buf, offset, i - offset + 1) + "\"");
                     }
                 }
             }
@@ -2299,13 +2247,17 @@ class JSONGeneral {
                 return negative ? -fv : fv;
             }
         } catch (Throwable throwable) {
-            throw throwable instanceof JSONException ? (JSONException) throwable : new JSONException("For input string: \"" + new String(buf) + "\"");
+            throw throwable instanceof JSONException ? (JSONException) throwable : new JSONException("For input string: \"" + new String(buf, offset, i - offset) + "\"");
+        } finally {
+            if (parseContext != null) {
+                parseContext.endIndex = i - 1;
+            }
         }
     }
 
-    final static double parseFloats(char[] buf, final int offset, final int endIndex, boolean doubleFlag) {
+    final static double parseFloats(char[] buf, final int offset, final int endIndex, JSONParseContext parseContext, boolean doubleFlag) {
+        int i = offset, zeroIndex = 0, decimalPointIndex = endIndex, cnt = 0, decimalCount = 0, zeroDecimalCount = 0, c, v, e10 = 0;
         try {
-            int i = offset, zeroIndex = 0, decimalPointIndex = endIndex, cnt = 0, decimalCount = 0, zeroDecimalCount = 0, c, v, e10 = 0;
             long value = 0L;
             boolean negative, expNegative = false;
             // 清除前置的空白
@@ -2393,13 +2345,12 @@ class JSONGeneral {
                     case 'f':
                     case 'D':
                     case 'd': {
-                        // 清除后置的空白
                         while (++i < endIndex && (c = buf[i]) <= ' ') ;
-                        if (i == endIndex) break label_double_al;
-                        throw new JSONException("error floats input: \"" + new String(buf) + "\"");
                     }
                     default: {
-                        throw new JSONException("error floats input: \"" + new String(buf) + "\"");
+                        if (i == endIndex || (parseContext != null && (c == ',' || c == ']' || c == '}')))
+                            break label_double_al;
+                        throw new JSONException("error floats input: \"" + new String(buf, offset, i - offset + 1) + "\"");
                     }
                 }
             }
@@ -2440,6 +2391,10 @@ class JSONGeneral {
             }
         } catch (Throwable throwable) {
             throw throwable instanceof JSONException ? (JSONException) throwable : new JSONException("For input string: \"" + new String(buf) + "\"");
+        } finally {
+            if (parseContext != null) {
+                parseContext.endIndex = i - 1;
+            }
         }
     }
 }

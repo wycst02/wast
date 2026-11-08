@@ -120,7 +120,7 @@ class JSONValueMatcher<T> {
                 if (ch != endToken) {
                     hashValue += ch;
                 }
-                result = parseContext.strictMode ? valueMapForChars.getValue(buf, offset, i, hashValue) : valueMapForChars.getValueByHash(hashValue);
+                result = parseContext.optionConfig.strictMode ? valueMapForChars.getValue(buf, offset, i, hashValue) : valueMapForChars.getValueByHash(hashValue);
             }
             parseContext.endIndex = i;
             return result;
@@ -145,7 +145,7 @@ class JSONValueMatcher<T> {
                 if (b != endToken) {
                     hashValue += b;
                 }
-                result = parseContext.strictMode ? valueMapForBytes.getValue(buf, offset, i, hashValue) : valueMapForBytes.getValueByHash(hashValue);
+                result = parseContext.optionConfig.strictMode ? valueMapForBytes.getValue(buf, offset, i, hashValue) : valueMapForBytes.getValueByHash(hashValue);
             }
             parseContext.endIndex = i;
             return result;
@@ -190,7 +190,7 @@ class JSONValueMatcher<T> {
                 if (ch != endToken) {
                     hashValue = (hashValue << bits) + ch;
                 }
-                result = parseContext.strictMode ? valueMapForChars.getValue(buf, offset, i, hashValue) : valueMapForChars.getValueByHash(hashValue);
+                result = parseContext.optionConfig.strictMode ? valueMapForChars.getValue(buf, offset, i, hashValue) : valueMapForChars.getValueByHash(hashValue);
             }
             parseContext.endIndex = i;
             return result;
@@ -215,7 +215,7 @@ class JSONValueMatcher<T> {
                 if (b != endToken) {
                     hashValue = (hashValue << bits) + b;
                 }
-                result = parseContext.strictMode ? valueMapForBytes.getValue(buf, offset, i, hashValue) : valueMapForBytes.getValueByHash(hashValue);
+                result = parseContext.optionConfig.strictMode ? valueMapForBytes.getValue(buf, offset, i, hashValue) : valueMapForBytes.getValueByHash(hashValue);
             }
             parseContext.endIndex = i;
             return result;
@@ -260,7 +260,7 @@ class JSONValueMatcher<T> {
                 if (ch != endToken) {
                     hashValue = hashValue * primeValue + ch;
                 }
-                result = parseContext.strictMode ? valueMapForChars.getValue(buf, offset, i, hashValue) : valueMapForChars.getValueByHash(hashValue);
+                result = parseContext.optionConfig.strictMode ? valueMapForChars.getValue(buf, offset, i, hashValue) : valueMapForChars.getValueByHash(hashValue);
             }
             parseContext.endIndex = i;
             return result;
@@ -285,7 +285,7 @@ class JSONValueMatcher<T> {
                 if (b != endToken) {
                     hashValue = hashValue * primeValue + b;
                 }
-                result = parseContext.strictMode ? valueMapForBytes.getValue(buf, offset, i, hashValue) : valueMapForBytes.getValueByHash(hashValue);
+                result = parseContext.optionConfig.strictMode ? valueMapForBytes.getValue(buf, offset, i, hashValue) : valueMapForBytes.getValueByHash(hashValue);
             }
             parseContext.endIndex = i;
             return result;

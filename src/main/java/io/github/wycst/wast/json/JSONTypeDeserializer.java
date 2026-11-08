@@ -22,7 +22,7 @@ import java.util.*;
  * @Description:
  */
 @SuppressWarnings({"all"})
-public abstract class JSONTypeDeserializer extends JSONGeneral {
+public abstract class JSONTypeDeserializer {
 
     final static Map<Class<?>, JSONTypeDeserializer> GLOBAL_DESERIALIZERS = new HashMap<Class<?>, JSONTypeDeserializer>(32);
 
@@ -37,7 +37,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
     final static CharSequenceImpl STRING_SKIPPER = new CharSequenceImpl.Skipper();
     final static NumberImpl NUMBER = new NumberImpl();
     final static NumberImpl.Skipper NUMBER_SKIPPER = new NumberImpl.Skipper();
-    final static NumberImpl NUMBER_LONG = new NumberImpl.LongImpl();
+    final static NumberImpl.LongImpl NUMBER_LONG = new NumberImpl.LongImpl();
     final static NumberImpl NUMBER_INTEGER = new NumberImpl.IntegerImpl();
     final static NumberImpl NUMBER_SHORT = new NumberImpl.ShortImpl();
     final static NumberImpl NUMBER_BYTE = new NumberImpl.ByteImpl();
@@ -60,14 +60,19 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
     protected static JSONTypeDeserializer ANY;
     final static JSONTypeDeserializer ANY_SKIPPER = new AnyImpl.Skipper();
 
+    final static int TYPE_BIGDECIMAL = 1;
+    final static int TYPE_BIGINTEGER = 2;
+    final static int TYPE_FLOAT = 3;
+    final static int TYPE_DOUBLE = 4;
+
     static {
         CharSequenceImpl stringDeserializer;
         if (EnvUtils.JDK_9_PLUS) {
             // System.out.println("# wast_json supported_intrinsic_candidate -> " + SUPPORTED_INTRINSIC_CANDIDATE);
-            if (SUPPORTED_INTRINSIC_CANDIDATE || (EnvUtils.JDK_16_PLUS && JSONVmOptions.isRequiredMemoryAlignment())) {
+            if (JSONGeneral.SUPPORTED_INTRINSIC_CANDIDATE || (EnvUtils.JDK_16_PLUS && JSONVmOptions.isRequiredMemoryAlignment())) {
                 stringDeserializer = STRING_JDK16;
             } else {
-                if (ENABLE_VECTOR) {
+                if (JSONGeneral.ENABLE_VECTOR) {
                     stringDeserializer = STRING_VECTOR;
                 } else {
                     stringDeserializer = STRING_SWAR;
@@ -220,20 +225,8 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
         }
 
         protected void skip(CharSource source, char[] buf, int fromIndex, int endCh, JSONParseContext parseContext) throws Exception {
-            if (source == null) {
-                int offset = fromIndex + 1;
-                final long quoteMask = endCh == '"' ? DOUBLE_QUOTE_CHAR_MASK : SINGLE_QUOTE_CHAR_MASK;  // 0xFFDDFFDDFFDDFFDDL : 0xFFD8FFD8FFD8FFD8L
-                for (; ; ) {
-                    char c = buf[offset = JSON_UTIL.ensureIndexOfQuoteOrBackslashChar(buf, offset, (char) endCh, quoteMask)];
-                    if (c == endCh) {
-                        parseContext.endIndex = offset;
-                        return;
-                    }
-                    // if Backslash skip current and the next
-                    offset += 2;
-                }
-            } else {
-                final String input = source.input();
+            if (EnvUtils.JDK_9_PLUS) {
+                final String input = parseContext.input;
                 int beginIndex = fromIndex + 1;
                 int endIndex = input.indexOf(endCh, beginIndex);
                 char prev = buf[endIndex - 1];
@@ -251,13 +244,25 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     }
                 }
                 parseContext.endIndex = endIndex;
+            } else {
+                int offset = fromIndex + 1;
+                final long quoteMask = endCh == '"' ? JSONGeneral.DOUBLE_QUOTE_CHAR_MASK : JSONGeneral.SINGLE_QUOTE_CHAR_MASK;  // 0xFFDDFFDDFFDDFFDDL : 0xFFD8FFD8FFD8FFD8L
+                for (; ; ) {
+                    char c = buf[offset = JSONGeneral.JSON_UTIL.ensureIndexOfQuoteOrBackslashChar(buf, offset, (char) endCh, quoteMask)];
+                    if (c == endCh) {
+                        parseContext.endIndex = offset;
+                        return;
+                    }
+                    // if Backslash skip current and the next
+                    offset += 2;
+                }
             }
         }
 
         protected void skip(CharSource source, byte[] buf, int fromIndex, int endByte, JSONParseContext parseContext) throws Exception {
             int beginIndex = fromIndex + 1;
-            if (source != null) {
-                final String input = source.input();
+            if (EnvUtils.JDK_9_PLUS) {
+                final String input = parseContext.input;
                 int endIndex = JSONGeneral.JSON_UTIL.indexOf(input, buf, beginIndex, endByte); // input.indexOf(endCh, beginIndex);
                 if (parseContext.validate && endIndex == -1) {
                     parseContext.validateFail = true;
@@ -347,7 +352,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     } catch (Throwable ignored) {
                     }
                 }
-                String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                 throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + beginChar + "' for CharSequence, expected '\"' ");
             }
         }
@@ -369,7 +374,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     } catch (Throwable ignored) {
                     }
                 }
-                String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                 throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "' for CharSequence, expected '\"' ");
             }
         }
@@ -382,9 +387,9 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 JSONCharArrayWriter writer = null;
                 char[] chars = null;
                 byte b;
-                final long quoteMask = endByte == '"' ? DOUBLE_QUOTE_MASK : SINGLE_QUOTE_MASK;
+                final long quoteMask = endByte == '"' ? JSONGeneral.DOUBLE_QUOTE_MASK : JSONGeneral.SINGLE_QUOTE_MASK;
                 for (; ; ) {
-                    b = buf[i = JSON_UTIL.ensureIndexOfQuoteOrBackslashOrUTF8Byte(buf, i, endByte, quoteMask)];
+                    b = buf[i = JSONGeneral.JSON_UTIL.ensureIndexOfQuoteOrBackslashOrUTF8Byte(buf, i, endByte, quoteMask)];
                     if (b == endByte) {
                         // endFlag
                         parseContext.endIndex = i;
@@ -400,15 +405,15 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     } else {
                         // '\' or the first byte of UTF-8 encoding
                         if (writer == null) {
-                            writer = getContextWriter(parseContext);
+                            writer = JSONGeneral.getContextWriter(parseContext);
                             chars = writer.ensureCapacity(buf.length);
                         }
                         if (i > beginIndex) {
                             count += JSONMemoryHandle.asciiBytesToChars(buf, beginIndex, i, chars, count);
                         }
-                        if (b == ESCAPE_BACKSLASH) {
+                        if (b == JSONGeneral.ESCAPE_BACKSLASH) {
                             writer.count = count;
-                            i = beginIndex = escapeNextBytes(buf, buf[i + 1], i, writer);
+                            i = beginIndex = JSONGeneral.escapeNextBytes(buf, buf[i + 1], i, writer);
                             count = writer.count;
                         } else {
                             do {
@@ -468,9 +473,9 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 JSONCharArrayWriter writer = null;
                 char ch;
                 boolean noEscapeFlag = true;
-                final long quoteMask = endChar == '"' ? DOUBLE_QUOTE_CHAR_MASK : SINGLE_QUOTE_CHAR_MASK;
+                final long quoteMask = endChar == '"' ? JSONGeneral.DOUBLE_QUOTE_CHAR_MASK : JSONGeneral.SINGLE_QUOTE_CHAR_MASK;
                 for (; ; ) {
-                    ch = buf[i = JSON_UTIL.ensureIndexOfQuoteOrBackslashChar(buf, i, endChar, quoteMask)];
+                    ch = buf[i = JSONGeneral.JSON_UTIL.ensureIndexOfQuoteOrBackslashChar(buf, i, endChar, quoteMask)];
                     if (ch == endChar) {
                         parseContext.endIndex = i;
                         int len = i - beginIndex;
@@ -482,13 +487,13 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         }
                     } else {
                         if (writer == null) {
-                            writer = getContextWriter(parseContext);
+                            writer = JSONGeneral.getContextWriter(parseContext);
                             noEscapeFlag = false;
                         }
                         if (i > beginIndex) {
                             writer.write(buf, beginIndex, i - beginIndex);
                         }
-                        i = beginIndex = escapeNextChars(buf, buf[i + 1], i, writer);
+                        i = beginIndex = JSONGeneral.escapeNextChars(buf, buf[i + 1], i, writer);
                     }
                 }
             }
@@ -498,14 +503,14 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
         static class StringJDK9PlusImpl extends CharSequenceImpl {
 
             final String deserializeString(CharSource charSource, char[] buf, int fromIndex, char endChar, GenericParameterizedType<?> parameterizedType, JSONParseContext parseContext) {
-                String source = charSource.input();
+                String source = parseContext.input;
                 int beginIndex = fromIndex + 1, i = beginIndex;
                 JSONCharArrayWriter writer = null;
                 char ch;
                 boolean noEscapeFlag = true;
-                final long quoteMask = endChar == '"' ? DOUBLE_QUOTE_CHAR_MASK : SINGLE_QUOTE_CHAR_MASK;
+                final long quoteMask = endChar == '"' ? JSONGeneral.DOUBLE_QUOTE_CHAR_MASK : JSONGeneral.SINGLE_QUOTE_CHAR_MASK;
                 for (; ; ) {
-                    ch = buf[i = JSON_UTIL.ensureIndexOfQuoteOrBackslashChar(buf, i, endChar, quoteMask)];
+                    ch = buf[i = JSONGeneral.JSON_UTIL.ensureIndexOfQuoteOrBackslashChar(buf, i, endChar, quoteMask)];
                     if (ch == endChar) {
                         parseContext.endIndex = i;
                         if (noEscapeFlag) {
@@ -517,13 +522,13 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         }
                     } else {
                         if (writer == null) {
-                            writer = getContextWriter(parseContext);
+                            writer = JSONGeneral.getContextWriter(parseContext);
                             noEscapeFlag = false;
                         }
                         if (i > beginIndex) {
                             writer.write(buf, beginIndex, i - beginIndex);
                         }
-                        i = beginIndex = escapeNextChars(buf, buf[i + 1], i, writer);
+                        i = beginIndex = JSONGeneral.escapeNextChars(buf, buf[i + 1], i, writer);
                     }
                 }
             }
@@ -532,7 +537,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 int beginIndex = fromIndex + 1, i = beginIndex;
                 JSONCharArrayWriter writer = null;
                 byte b;
-                final long quoteMask = endByte == '"' ? DOUBLE_QUOTE_MASK : SINGLE_QUOTE_MASK;
+                final long quoteMask = endByte == '"' ? JSONGeneral.DOUBLE_QUOTE_MASK : JSONGeneral.SINGLE_QUOTE_MASK;
 
                 {
                     long result;
@@ -696,44 +701,44 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         i += 64;
                     }
                     if (result != 0) {
-                        writer = getContextWriter(parseContext);
+                        writer = JSONGeneral.getContextWriter(parseContext);
                         writer.ensureCapacity(buf.length);
-                        charSource.writeString(writer, buf, beginIndex, i - beginIndex);
-                        if (b == ESCAPE_BACKSLASH) {
-                            i = beginIndex = escapeNextBytes(buf, buf[i + 1], i, writer);
+                        charSource.writeString(writer, parseContext.input, buf, beginIndex, i - beginIndex);
+                        if (b == JSONGeneral.ESCAPE_BACKSLASH) {
+                            i = beginIndex = JSONGeneral.escapeNextBytes(buf, buf[i + 1], i, writer);
                         } else {
-                            i = beginIndex = decodeUTF8Bytes(buf, i, b, writer);
+                            i = beginIndex = JSONGeneral.decodeUTF8Bytes(buf, i, b, writer);
                         }
                     }
                 }
 
                 for (; ; ) {
-                    b = buf[i = JSON_UTIL.ensureIndexOfQuoteOrBackslashOrUTF8Byte(buf, i, endByte, quoteMask)];
+                    b = buf[i = JSONGeneral.JSON_UTIL.ensureIndexOfQuoteOrBackslashOrUTF8Byte(buf, i, endByte, quoteMask)];
                     if (b == endByte) {
                         // endFlag
                         parseContext.endIndex = i;
                         if (writer == null) {
                             // ascii mode and no escape
-                            return charSource.input().substring(beginIndex, i); // return JSONMemoryHandle.JSON_ENDIAN_UNSAFE.createAsciiString(buf, beginIndex, i - beginIndex);
+                            return parseContext.input.substring(beginIndex, i); // return JSONMemoryHandle.JSON_ENDIAN_UNSAFE.createAsciiString(buf, beginIndex, i - beginIndex);
                         } else {
                             if (i > beginIndex) {
-                                charSource.writeString(writer, buf, beginIndex, i - beginIndex);
+                                charSource.writeString(writer, parseContext.input, buf, beginIndex, i - beginIndex);
                             }
                             return writer.toString();
                         }
                     } else {
                         // '\' or the first byte of UTF-8 encoding
                         if (writer == null) {
-                            writer = getContextWriter(parseContext);
+                            writer = JSONGeneral.getContextWriter(parseContext);
                             writer.ensureCapacity(buf.length);
                         }
                         if (i > beginIndex) {
-                            charSource.writeString(writer, buf, beginIndex, i - beginIndex);
+                            charSource.writeString(writer, parseContext.input, buf, beginIndex, i - beginIndex);
                         }
-                        if (b == ESCAPE_BACKSLASH) {
-                            i = beginIndex = escapeNextBytes(buf, buf[i + 1], i, writer);
+                        if (b == JSONGeneral.ESCAPE_BACKSLASH) {
+                            i = beginIndex = JSONGeneral.escapeNextBytes(buf, buf[i + 1], i, writer);
                         } else {
-                            i = beginIndex = decodeUTF8Bytes(buf, i, b, writer);
+                            i = beginIndex = JSONGeneral.decodeUTF8Bytes(buf, i, b, writer);
                         }
                     }
                 }
@@ -747,9 +752,9 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 int beginIndex = fromIndex + 1, i = beginIndex;
                 JSONCharArrayWriter writer = null;
                 byte b;
-                final long quoteMask = endByte == '"' ? DOUBLE_QUOTE_MASK : SINGLE_QUOTE_MASK;
+                final long quoteMask = endByte == '"' ? JSONGeneral.DOUBLE_QUOTE_MASK : JSONGeneral.SINGLE_QUOTE_MASK;
                 for (; ; ) {
-                    b = buf[i = JSON_UTIL.ensureIndexOfQuoteOrBackslashOrUTF8Byte(buf, i, endByte, quoteMask)];
+                    b = buf[i = JSONGeneral.JSON_UTIL.ensureIndexOfQuoteOrBackslashOrUTF8Byte(buf, i, endByte, quoteMask)];
                     if (b == endByte) {
                         // endFlag
                         parseContext.endIndex = i;
@@ -758,21 +763,21 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                             return JSONMemoryHandle.createAsciiString(buf, beginIndex, i - beginIndex);
                         } else {
                             if (i > beginIndex) {
-                                charSource.writeString(writer, buf, beginIndex, i - beginIndex);
+                                charSource.writeString(writer, parseContext.input, buf, beginIndex, i - beginIndex);
                             }
                             return writer.toString();
                         }
                     } else {
                         // '\' or the first byte of UTF-8 encoding
                         if (writer == null) {
-                            writer = getContextWriter(parseContext);
+                            writer = JSONGeneral.getContextWriter(parseContext);
                             writer.ensureCapacity(buf.length);
                         }
                         if (i > beginIndex) {
-                            charSource.writeString(writer, buf, beginIndex, i - beginIndex);
+                            charSource.writeString(writer, parseContext.input, buf, beginIndex, i - beginIndex);
                         }
-                        if (b == ESCAPE_BACKSLASH) {
-                            i = beginIndex = escapeNextBytes(buf, buf[i + 1], i, writer);
+                        if (b == JSONGeneral.ESCAPE_BACKSLASH) {
+                            i = beginIndex = JSONGeneral.escapeNextBytes(buf, buf[i + 1], i, writer);
                         } else {
                             do {
                                 // b < 0
@@ -816,7 +821,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                                         throw new UnsupportedOperationException("utf-8 character error ");
                                     }
                                 } else {
-                                    throw new UnsupportedOperationException("utf-8 character error:  " + createErrorContextText(buf, i - 1));
+                                    throw new UnsupportedOperationException("utf-8 character error:  " + JSONGeneral.createErrorContextText(buf, i - 1));
                                 }
                             } while ((b = buf[++i]) < 0);
                             beginIndex = i;
@@ -832,20 +837,20 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
 
             String deserializeString(CharSource charSource, char[] buf, int fromIndex, char endChar, GenericParameterizedType<?> parameterizedType, JSONParseContext parseContext) {
                 int beginIndex = fromIndex + 1;
-                String source = charSource.input();
+                String source = parseContext.input;
                 int endIndex = source.indexOf(endChar, beginIndex);
                 if (!parseContext.checkEscapeBackslashJDK16(source, beginIndex, endIndex)) {
                     parseContext.endIndex = endIndex;
                     return new String(buf, beginIndex, endIndex - beginIndex);
                 }
                 // must exist \\ in range {beginIndex, endIndex}
-                JSONCharArrayWriter writer = getContextWriter(parseContext);
+                JSONCharArrayWriter writer = JSONGeneral.getContextWriter(parseContext);
                 do {
                     int escapeIndex = parseContext.getEscapeOffset();
                     if (escapeIndex > beginIndex) {
                         writer.write(buf, beginIndex, escapeIndex - beginIndex);
                     }
-                    beginIndex = escapeNextChars(buf, buf[escapeIndex + 1], escapeIndex, writer);
+                    beginIndex = JSONGeneral.escapeNextChars(buf, buf[escapeIndex + 1], escapeIndex, writer);
                     if (beginIndex > endIndex) {
                         endIndex = source.indexOf(endChar, endIndex + 1);
                     }
@@ -857,28 +862,28 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             }
 
             String deserializeString(CharSource charSource, byte[] buf, int fromIndex, int endByte, GenericParameterizedType<?> parameterizedType, JSONParseContext parseContext) {
-                String source = charSource.input();
+                String source = parseContext.input;
                 int beginIndex = fromIndex + 1;
                 // int endIndex = JSON_UTIL.indexOf(source, buf, beginIndex, endByte);
                 int endIndex = source.indexOf(endByte, beginIndex);
                 if (!parseContext.checkEscapeBackslashJDK16(source, beginIndex, endIndex)) {
                     parseContext.endIndex = endIndex;
-                    return charSource.substring(buf, beginIndex, endIndex);
+                    return charSource.substring(source, buf, beginIndex, endIndex);
                 }
-                JSONCharArrayWriter writer = getContextWriter(parseContext);
+                JSONCharArrayWriter writer = JSONGeneral.getContextWriter(parseContext);
                 do {
                     int escapeIndex = parseContext.getEscapeOffset();
                     if (escapeIndex > beginIndex) {
-                        charSource.writeString(writer, buf, beginIndex, escapeIndex - beginIndex);
+                        charSource.writeString(writer, source, buf, beginIndex, escapeIndex - beginIndex);
                     }
-                    beginIndex = escapeNextBytes(buf, buf[escapeIndex + 1], escapeIndex, writer);
+                    beginIndex = JSONGeneral.escapeNextBytes(buf, buf[escapeIndex + 1], escapeIndex, writer);
                     if (beginIndex > endIndex) {
                         endIndex = source.indexOf(endByte, endIndex + 1);
                     }
                 } while (parseContext.checkEscapeBackslashJDK16(source, beginIndex, endIndex));
 
                 parseContext.endIndex = endIndex;
-                charSource.writeString(writer, buf, beginIndex, endIndex - beginIndex);
+                charSource.writeString(writer, parseContext.input, buf, beginIndex, endIndex - beginIndex);
                 return writer.toString();
             }
         }
@@ -1021,7 +1026,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 char c = buf[++fromIndex];
                 if (c == beginChar) {
                     // discovered empty ""
-                    if (parseContext.unMatchedEmptyAsNull) {
+                    if (parseContext.optionConfig.unMatchedEmptyAsNull) {
                         parseContext.endIndex = fromIndex;
                         return null;
                     }
@@ -1052,7 +1057,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 byte c = buf[++fromIndex];
                 if (c == beginChar) {
                     // discovered empty ""
-                    if (parseContext.unMatchedEmptyAsNull) {
+                    if (parseContext.optionConfig.unMatchedEmptyAsNull) {
                         parseContext.endIndex = fromIndex;
                         return null;
                     }
@@ -1183,7 +1188,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         if (ch == ',' || ch == endToken) {
                             break;
                         }
-                        String contextErrorAt = createErrorContextText(buf, i);
+                        String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("For input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + endToken + "', but found '" + ch + "', context text by '" + contextErrorAt + "'");
                     }
                     case 'f':
@@ -1193,7 +1198,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         if (ch == ',' || ch == endToken) {
                             break;
                         }
-                        String contextErrorAt = createErrorContextText(buf, i);
+                        String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("For input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + endToken + "', but found '" + ch + "', context text by '" + contextErrorAt + "'");
                     }
                     case 'd':
@@ -1203,11 +1208,11 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         if (ch == ',' || ch == endToken) {
                             break;
                         }
-                        String contextErrorAt = createErrorContextText(buf, i);
+                        String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("For input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + endToken + "', but found '" + ch + "', context text by '" + contextErrorAt + "'");
                     }
                     default: {
-                        String contextErrorAt = createErrorContextText(buf, i);
+                        String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("For input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + endToken + "', but found '" + ch + "', context text by '" + contextErrorAt + "'");
                     }
                 }
@@ -1347,7 +1352,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     if ((v = JSONMemoryHandle.JSON_ENDIAN.digits2Bytes(buf, ++i)) != -1) {
                         value = value * 100 + v;
                         int begin = i;
-                        value = parseDecimalDigits(value, buf, begin + 2, parseContext);
+                        value = JSONGeneral.parseDecimalDigits(value, buf, begin + 2, parseContext);
                         b = buf[i = parseContext.endIndex];
                         int digitNum = i - begin;
                         cnt += digitNum;
@@ -1363,7 +1368,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (b <= ' ') {
                     // while ((b = buf[++i]) <= ' ') ;
-                    b = buf[i = skipWhiteSpaces(buf, i + 1)];
+                    b = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                 }
                 if (b == ',' || b == endToken) {
                     break label_num;
@@ -1396,7 +1401,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         if (b == ',' || b == endToken) {
                             break label_num;
                         }
-                        String contextErrorAt = createErrorContextText(buf, i);
+                        String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("For input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + (char) endToken + "', but found '" + (char) b + "', context text by '" + contextErrorAt + "'");
                     }
                     case 'f':
@@ -1406,7 +1411,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         if (b == ',' || b == endToken) {
                             break label_num;
                         }
-                        String contextErrorAt = createErrorContextText(buf, i);
+                        String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("For input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + (char) endToken + "', but found '" + (char) b + "', context text by '" + contextErrorAt + "'");
                     }
                     case 'd':
@@ -1416,11 +1421,11 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         if (b == ',' || b == endToken) {
                             break label_num;
                         }
-                        String contextErrorAt = createErrorContextText(buf, i);
+                        String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("For input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + (char) endToken + "', but found '" + (char) b + "', context text by '" + contextErrorAt + "'");
                     }
                     default: {
-                        String contextErrorAt = createErrorContextText(buf, i);
+                        String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("For input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + (char) endToken + "', but found '" + (char) b + "', context text by '" + contextErrorAt + "'");
                     }
                 }
@@ -1548,17 +1553,17 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 value = (value << 3) + (value << 1) + (ch & 0xF);
                 ch = buf[++i];
             }
-            if (ch == COMMA || ch == endToken) {
+            if (ch == JSONGeneral.COMMA || ch == endToken) {
                 parseContext.endIndex = i - 1;
                 return negative ? -value : value;
             }
-            if (ch <= WHITE_SPACE || ch == 'L' || ch == 'l') {
-                while ((ch = buf[++i]) <= WHITE_SPACE) ;
-                if (ch == COMMA || ch == endToken) {
+            if (ch <= JSONGeneral.WHITE_SPACE || ch == 'L' || ch == 'l') {
+                while ((ch = buf[++i]) <= JSONGeneral.WHITE_SPACE) ;
+                if (ch == JSONGeneral.COMMA || ch == endToken) {
                     parseContext.endIndex = i - 1;
                     return negative ? -value : value;
                 }
-                String contextErrorAt = createErrorContextText(buf, i);
+                String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("For input string: \"" + new String(buf, offset, i - offset + 1) + "\", expected ',' or '" + endToken + "', but found '" + ch + "', context text by '" + contextErrorAt + "'");
             }
             // forward default deserialize
@@ -1576,44 +1581,22 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 value = (value << 3) + (value << 1) + (b & 0xF);
                 b = buf[++i];
             }
-            if (b == COMMA || b == endToken) {
+            if (b == JSONGeneral.COMMA || b == endToken) {
                 parseContext.endIndex = i - 1;
                 return negative ? -value : value;
             }
-            if (b <= WHITE_SPACE || b == 'L' || b == 'l') {
-                while ((b = buf[++i]) <= WHITE_SPACE) ;
-                if (b == COMMA || b == endToken) {
+            if (b <= JSONGeneral.WHITE_SPACE || b == 'L' || b == 'l') {
+                while ((b = buf[++i]) <= JSONGeneral.WHITE_SPACE) ;
+                if (b == JSONGeneral.COMMA || b == endToken) {
                     parseContext.endIndex = i - 1;
                     return negative ? -value : value;
                 }
-                String contextErrorAt = createErrorContextText(buf, i);
+                String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("For input string: \"" + new String(buf, offset, i - offset + 1) + "\", expected ',' or '" + endToken + "', but found '" + (char) b + "', context text by '" + contextErrorAt + "'");
             }
             // forward default deserialize
             return parseNumber(buf, fromIndex, i, value, cnt + i - offset, negative, endToken, TYPE_DOUBLE, parseContext).longValue();
         }
-
-//        protected final static long deserializeLong(long value, boolean negative, int cnt, byte[] buf, int fromIndex, int offset, int endToken, JSONParseContext parseContext) throws Exception {
-//            int i;
-//            byte b;
-//            value = parseDecimalDigits(value, buf, offset, parseContext);
-//            b = buf[i = parseContext.endIndex];
-//            if (b == COMMA || b == endToken) {
-//                parseContext.endIndex = i - 1;
-//                return negative ? -value : value;
-//            }
-//            if (b <= WHITE_SPACE || b == 'L' || b == 'l') {
-//                while ((b = buf[++i]) <= WHITE_SPACE) ;
-//                if (b == COMMA || b == endToken) {
-//                    parseContext.endIndex = i - 1;
-//                    return negative ? -value : value;
-//                }
-//                String contextErrorAt = createErrorContextText(buf, i);
-//                throw new JSONException("For input string: \"" + new String(buf, offset, i - offset + 1) + "\", expected ',' or '" + endToken + "', but found '" + (char) b + "', context text by '" + contextErrorAt + "'");
-//            }
-//            // forward default deserialize
-//            return parseNumber(buf, fromIndex, i, value, cnt + i - offset, negative, endToken, TYPE_DOUBLE, parseContext).longValue();
-//        }
 
         protected Number deserializeNumber(long initValue, boolean negative, int cnt, char[] buf, int fromIndex, int offset, GenericParameterizedType<?> parameterizedType, int endToken, JSONParseContext parseContext) {
             if (parameterizedType == GenericParameterizedType.AnyType || parameterizedType == null) {
@@ -1643,9 +1626,6 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 return deserializeInteger(initValue, negative, cnt, buf, fromIndex, offset, endToken, parseContext);
             }
 
-            //            protected Number deserializeNumber(long initValue, boolean negative, int cnt, byte[] buf, int fromIndex, int offset, GenericParameterizedType parameterizedType, int endToken, JSONParseContext parseContext) throws Exception {
-//                return deserializeLong(initValue, negative, cnt, buf, fromIndex, offset, endToken, parseContext);
-//            }
             @Override
             protected Object deserialize(CharSource charSource, byte[] buf, final int offset, GenericParameterizedType<?> parameterizedType, Object instance, int endToken, JSONParseContext parseContext) throws Exception {
                 int i = offset;
@@ -1655,19 +1635,19 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 if ((negative = b == '-') || b == '+') {
                     ++i;
                 }
-                long value = parseDecimalDigits(0, buf, i, parseContext);
+                long value = JSONGeneral.parseDecimalDigits(0, buf, i, parseContext);
                 b = buf[i = parseContext.endIndex];
-                if (b == COMMA || b == endToken) {
+                if (b == JSONGeneral.COMMA || b == endToken) {
                     parseContext.endIndex = i - 1;
                     return negative ? -value : value;
                 }
-                if (b <= WHITE_SPACE || b == 'L' || b == 'l') {
-                    while ((b = buf[++i]) <= WHITE_SPACE) ;
-                    if (b == COMMA || b == endToken) {
+                if (b <= JSONGeneral.WHITE_SPACE || b == 'L' || b == 'l') {
+                    while ((b = buf[++i]) <= JSONGeneral.WHITE_SPACE) ;
+                    if (b == JSONGeneral.COMMA || b == endToken) {
                         parseContext.endIndex = i - 1;
                         return negative ? -value : value;
                     }
-                    String contextErrorAt = createErrorContextText(buf, i);
+                    String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("For input string: \"" + new String(buf, offset, i - offset + 1) + "\", expected ',' or '" + endToken + "', but found '" + (char) b + "', context text by '" + contextErrorAt + "'");
                 }
                 if (i == offset /*&& beginByte == 'n' || beginByte == '"' || beginByte == '\''*/) {
@@ -1712,26 +1692,26 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     value = (value << 3) + (value << 1) + (b & 0xF);
                     b = buf[++i];
                 }
-                if (b == COMMA || b == endToken) {
+                if (b == JSONGeneral.COMMA || b == endToken) {
                     parseContext.endIndex = i - 1;
                     return negative ? -value : value;
                 }
                 return withEndInteger(b, i == offset, negative, value, buf, i, offset, parameterizedType, endToken, parseContext);
             }
 
-            private Integer withEndInteger(byte b, boolean notMatch, boolean negative, int value, byte[] buf, final int offset, int begin, GenericParameterizedType<?> parameterizedType, int endToken, JSONParseContext parseContext) throws Exception {
+            private static Integer withEndInteger(byte b, boolean notMatch, boolean negative, int value, byte[] buf, final int offset, int begin, GenericParameterizedType<?> parameterizedType, int endToken, JSONParseContext parseContext) throws Exception {
                 int i = offset;
-                if (b <= WHITE_SPACE || b == 'L' || b == 'l') {
-                    while ((b = buf[++i]) <= WHITE_SPACE) ;
-                    if (b == COMMA || b == endToken) {
+                if (b <= JSONGeneral.WHITE_SPACE || b == 'L' || b == 'l') {
+                    while ((b = buf[++i]) <= JSONGeneral.WHITE_SPACE) ;
+                    if (b == JSONGeneral.COMMA || b == endToken) {
                         parseContext.endIndex = i - 1;
                         return negative ? -value : value;
                     }
-                    String contextErrorAt = createErrorContextText(buf, i);
+                    String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("For input string: \"" + new String(buf, begin, i - begin + 1) + "\", expected ',' or '" + endToken + "', but found '" + (char) b + "', context text by '" + contextErrorAt + "'");
                 }
                 if (notMatch) {
-                    return (Integer) numberNotMatch(buf[offset], buf, offset, parameterizedType, this, parseContext);
+                    return (Integer) numberNotMatch(buf[offset], buf, offset, parameterizedType, NUMBER_INTEGER, parseContext);
                 }
                 return parseNumber(buf, begin, i, value, i - begin, negative, endToken, TYPE_DOUBLE, parseContext).intValue();
             }
@@ -1840,14 +1820,14 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     }
                     if (b == '.') {
                         int begin = i + 1;
-                        value = parseDecimalDigits(value, buf, begin, parseContext);
+                        value = JSONGeneral.parseDecimalDigits(value, buf, begin, parseContext);
                         b = buf[i = parseContext.endIndex];
                         int digitNum = i - begin;
                         cnt += digitNum;
                         decimalCount += digitNum;
                     }
                     if (b <= ' ') {
-                        b = buf[i = skipWhiteSpaces(buf, i + 1)];
+                        b = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                     }
                     if (b == ',' || b == endToken) {
                         break;
@@ -1881,11 +1861,11 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                             if (b == ',' || b == endToken) {
                                 break;
                             }
-                            String contextErrorAt = createErrorContextText(buf, i);
+                            String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("For input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + (char) endToken + "', but found '" + (char) b + "', context text by '" + contextErrorAt + "'");
                         }
                         default: {
-                            String contextErrorAt = createErrorContextText(buf, i);
+                            String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("For input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + (char) endToken + "', but found '" + (char) b + "', context text by '" + contextErrorAt + "'");
                         }
                     }
@@ -1933,13 +1913,13 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 int i = offset;
                 char ch;
                 do {
-                    ch = buf[i = skipDigits(buf, i)];
+                    ch = buf[i = JSONGeneral.skipDigits(buf, i)];
                     if (ch == '.') {
                         // while (NumberUtils.isDigit((ch = buf[++i]))) ;
-                        ch = buf[i = skipDigits(buf, ++i)];
+                        ch = buf[i = JSONGeneral.skipDigits(buf, ++i)];
                     }
                     if (ch <= ' ') {
-                        ch = buf[i = skipWhiteSpaces(buf, i + 1)];
+                        ch = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                     }
                     if (ch == ',' || ch == endToken) {
                         break;
@@ -1974,7 +1954,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                                 parseContext.validateFail = true;
                                 return null;
                             }
-                            String contextErrorAt = createErrorContextText(buf, i);
+                            String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("skip input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + endToken + "', but found '" + ch + "', context text by '" + contextErrorAt + "'");
                         }
                         default: {
@@ -1982,7 +1962,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                                 parseContext.validateFail = true;
                                 return null;
                             }
-                            String contextErrorAt = createErrorContextText(buf, i);
+                            String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("skip input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + endToken + "', but found '" + ch + "', context text by '" + contextErrorAt + "'");
                         }
                     }
@@ -2003,7 +1983,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         while (NumberUtils.isDigit((b = buf[++i]))) ;
                     }
                     if (b <= ' ') {
-                        b = buf[i = skipWhiteSpaces(buf, i + 1)];
+                        b = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                     }
                     if (b == ',' || b == endToken) {
                         break;
@@ -2038,7 +2018,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                                 parseContext.validateFail = true;
                                 return null;
                             }
-                            String contextErrorAt = createErrorContextText(buf, i);
+                            String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("skip input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + endToken + "', but found '" + b + "', context text by '" + contextErrorAt + "'");
                         }
                         default: {
@@ -2046,7 +2026,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                                 parseContext.validateFail = true;
                                 return null;
                             }
-                            String contextErrorAt = createErrorContextText(buf, i);
+                            String contextErrorAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("skip input string: \"" + new String(buf, fromIndex, i - fromIndex + 1) + "\", expected ',' or '" + endToken + "', but found '" + b + "', context text by '" + contextErrorAt + "'");
                         }
                     }
@@ -2081,7 +2061,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 if (beginChar == 'n' && parameterizedType.getActualType() == Boolean.class) {
                     return parseNull(buf, fromIndex, parseContext);
                 }
-                String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                 throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + beginChar + "' for boolean Type, expected 't' or 'f'");
             }
         }
@@ -2096,7 +2076,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 if (beginByte == 'n' && parameterizedType.getActualType() == Boolean.class) {
                     return parseNull(buf, fromIndex, parseContext);
                 }
-                String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                 throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) beginByte + "' for Boolean Type, expected 't' or 'f'");
             }
         }
@@ -2107,21 +2087,21 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
 
         @Override
         protected Object valueOf(String value, Class<?> actualType) {
-            return matchDate(getChars(value), 0, value.length(), null, (Class<? extends Date>) actualType);
+            return JSONGeneral.matchDate(JSONGeneral.getChars(value), 0, value.length(), null, (Class<? extends Date>) actualType);
         }
 
         /**
          * Default模式将自动匹配日期
          */
         protected Object deserializeDate(char[] buf, int from, int to, Class<? extends Date> dateCls) {
-            return matchDate(buf, from + 1, to - 1, null, dateCls);
+            return JSONGeneral.matchDate(buf, from + 1, to - 1, null, dateCls);
         }
 
         /**
          * Default模式将自动匹配日期(byte[])
          */
         protected Object deserializeDate(byte[] buf, int from, int to, Class<? extends Date> dateCls) {
-            return matchDate(buf, from + 1, to - 1, null, dateCls);
+            return JSONGeneral.matchDate(buf, from + 1, to - 1, null, dateCls);
         }
 
         // 通过字符数组解析
@@ -2144,7 +2124,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 default: {
                     // long
                     long timestamp = (Long) NUMBER_LONG.deserialize(charSource, buf, fromIndex, GenericParameterizedType.LongType, null, endToken, parseContext);
-                    return parseDate(timestamp, (Class<? extends Date>) parameterizedType.getActualType());
+                    return JSONGeneral.parseDate(timestamp, (Class<? extends Date>) parameterizedType.getActualType());
                 }
             }
         }
@@ -2169,7 +2149,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 default: {
                     // long
                     long timestamp = (Long) NUMBER_LONG.deserialize(charSource, bytes, fromIndex, GenericParameterizedType.LongType, null, endToken, parseContext);
-                    return parseDate(timestamp, (Class<? extends Date>) parameterizedType.getActualType());
+                    return JSONGeneral.parseDate(timestamp, (Class<? extends Date>) parameterizedType.getActualType());
                 }
             }
         }
@@ -2190,7 +2170,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 String patternAt = property.pattern();
                 if (!patternAt.isEmpty()) {
                     pattern = patternAt;
-                    patternType = getPatternType(pattern);
+                    patternType = JSONGeneral.getPatternType(pattern);
                 }
 
                 if (patternType == 4) {
@@ -2200,15 +2180,15 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
 
             @Override
             protected Object valueOf(String value, Class<?> actualType) {
-                return parseDateValueOfString(getChars(value), -1, value.length() + 1, pattern, patternType, dateTemplate, timezone, (Class<? extends Date>) actualType);
+                return JSONGeneral.parseDateValueOfString(JSONGeneral.getChars(value), -1, value.length() + 1, pattern, patternType, dateTemplate, timezone, (Class<? extends Date>) actualType);
             }
 
             protected Object deserializeDate(char[] buf, int from, int to, Class<? extends Date> dateCls) {
-                return parseDateValueOfString(buf, from, to, pattern, patternType, dateTemplate, timezone, dateCls);
+                return JSONGeneral.parseDateValueOfString(buf, from, to, pattern, patternType, dateTemplate, timezone, dateCls);
             }
 
             protected Object deserializeDate(byte[] buf, int from, int to, Class<? extends Date> dateCls) {
-                return parseDateValueOfString(buf, from, to, pattern, patternType, dateTemplate, timezone, dateCls);
+                return JSONGeneral.parseDateValueOfString(buf, from, to, pattern, patternType, dateTemplate, timezone, dateCls);
             }
         }
     }
@@ -2226,7 +2206,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             try {
                 return Enum.valueOf(enumCls, name);
             } catch (RuntimeException exception) {
-                if (parseContext.unknownEnumAsNull) {
+                if (parseContext.optionConfig.unknownEnumAsNull) {
                     return null;
                 } else {
                     throw exception;
@@ -2239,7 +2219,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             try {
                 return Enum.valueOf(enumCls, name);
             } catch (RuntimeException exception) {
-                if (parseContext.unknownEnumAsNull) {
+                if (parseContext.optionConfig.unknownEnumAsNull) {
                     return null;
                 } else {
                     throw exception;
@@ -2316,10 +2296,10 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         }
                     }
                     parseContext.endIndex = i;
-                    if (parseContext.unknownEnumAsNull) {
+                    if (parseContext.optionConfig.unknownEnumAsNull) {
                         return null;
                     }
-                    String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                     throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unknown Enum name '" + new String(buf, fromIndex + 1, i - fromIndex - 1) + "' of EnumType " + enumCls);
                 }
                 return value;
@@ -2331,18 +2311,18 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 Enum value = enumValueMatcher.matchValue(charSource, buf, i, endByte, parseContext);
                 if (value == null) {
                     i = parseContext.endIndex;
-                    if (buf[i - 1] == ESCAPE_BACKSLASH) {
+                    if (buf[i - 1] == JSONGeneral.ESCAPE_BACKSLASH) {
                         // skip
                         byte b, prev = 0;
-                        while (((b = buf[++i]) != endByte || prev == ESCAPE_BACKSLASH)) {
+                        while (((b = buf[++i]) != endByte || prev == JSONGeneral.ESCAPE_BACKSLASH)) {
                             prev = b;
                         }
                     }
                     parseContext.endIndex = i;
-                    if (parseContext.unknownEnumAsNull) {
+                    if (parseContext.optionConfig.unknownEnumAsNull) {
                         return null;
                     }
-                    String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                     throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unknown Enum name '" + new String(buf, fromIndex + 1, i - fromIndex - 1) + "' of EnumType " + enumCls);
                 }
                 return value;
@@ -2400,10 +2380,10 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         }
                     }
                     parseContext.endIndex = i;
-                    if (parseContext.unknownEnumAsNull) {
+                    if (parseContext.optionConfig.unknownEnumAsNull) {
                         return null;
                     }
-                    String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                     throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unknown Enum name '" + new String(buf, fromIndex + 1, i - fromIndex - 1) + "' of EnumType " + enumCls);
                 }
                 return value;
@@ -2435,17 +2415,17 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 parseContext.endIndex = i;
                 if (value == null) {
-                    if (buf[i - 1] == ESCAPE_BACKSLASH) {
+                    if (buf[i - 1] == JSONGeneral.ESCAPE_BACKSLASH) {
                         byte b, prev = 0;
-                        while (((b = buf[++i]) != endToken || prev == ESCAPE_BACKSLASH)) {
+                        while (((b = buf[++i]) != endToken || prev == JSONGeneral.ESCAPE_BACKSLASH)) {
                             prev = b;
                         }
                     }
                     parseContext.endIndex = i;
-                    if (parseContext.unknownEnumAsNull) {
+                    if (parseContext.optionConfig.unknownEnumAsNull) {
                         return null;
                     }
-                    String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                     throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unknown Enum name '" + new String(buf, fromIndex + 1, i - fromIndex - 1) + "' of EnumType " + enumCls);
                 }
                 return value;
@@ -2470,7 +2450,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             if (beginChar == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             }
-            String errorContextTextAt = createErrorContextText(buf, fromIndex);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
             throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + beginChar + "' for Class Type, expected '\"' ");
         }
 
@@ -2483,7 +2463,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             if (beginByte == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             }
-            String errorContextTextAt = createErrorContextText(buf, fromIndex);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
             throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) beginByte + "' for Class Type, expected '\"' ");
         }
     }
@@ -2566,16 +2546,16 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
         }
 
         private static byte[] parseBytesOfBuf0(int fromIndex, int len, char[] buf, JSONParseContext parseContext) {
-            if (parseContext.byteArrayFromHexString) {
-                return hexString2Bytes(buf, fromIndex + 1, len);
+            if (parseContext.optionConfig.byteArrayFromHexString) {
+                return JSONGeneral.hexString2Bytes(buf, fromIndex + 1, len);
             } else {
                 return Base64Utils.decode(buf, fromIndex + 1, len);
             }
         }
 
         private static byte[] parseBytesOfBuf0(int fromIndex, int len, byte[] buf, JSONParseContext parseContext) {
-            if (parseContext.byteArrayFromHexString) {
-                return hexString2Bytes(buf, fromIndex + 1, len);
+            if (parseContext.optionConfig.byteArrayFromHexString) {
+                return JSONGeneral.hexString2Bytes(buf, fromIndex + 1, len);
             } else {
                 return Base64Utils.decode(buf, fromIndex + 1, len);
             }
@@ -2623,7 +2603,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             }
 
             ArrayList<Object> collection = new ArrayList<Object>(5);
-            boolean allowComment = parseContext.allowComment;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = beginIndex; ; ++i) {
                 // clear white space characters
                 while ((ch = buf[i]) <= ' ') {
@@ -2631,12 +2611,12 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ']') {
-                    if (!collection.isEmpty() && !parseContext.allowLastEndComma) {
-                        String errorContextTextAt = createErrorContextText(buf, i);
+                    if (!collection.isEmpty() && !parseContext.optionConfig.allowLastEndComma) {
+                        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the closing symbol ']' is not allowed here.");
                     }
                     parseContext.endIndex = i;
@@ -2649,7 +2629,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 while ((ch = buf[++i]) <= ' ') ;
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ',') {
@@ -2659,7 +2639,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     parseContext.endIndex = i;
                     return CollectionUtils.toArray(collection, elementCls);
                 }
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + ch + "', expected ',' or ']'");
             }
         }
@@ -2681,7 +2661,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 valueDeserializer = store.getTypeDeserializer(elementCls);
             }
             ArrayList<Object> collection = new ArrayList<Object>(5);
-            boolean allowComment = parseContext.allowComment;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = beginIndex; ; ++i) {
                 // clear white space characters
                 while ((b = buf[i]) <= ' ') {
@@ -2689,25 +2669,25 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (allowComment) {
                     if (b == '/') {
-                        b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (b == ']') {
-                    if (!collection.isEmpty() && !parseContext.allowLastEndComma) {
-                        String errorContextTextAt = createErrorContextText(buf, i);
+                    if (!collection.isEmpty() && !parseContext.optionConfig.allowLastEndComma) {
+                        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the closing symbol ']' is not allowed here.");
                     }
                     parseContext.endIndex = i;
                     return CollectionUtils.toArray(collection, elementCls);
                 }
 
-                Object value = valueDeserializer.deserialize(charSource, buf, i, valueType, null, END_ARRAY, parseContext);
+                Object value = valueDeserializer.deserialize(charSource, buf, i, valueType, null, JSONGeneral.END_ARRAY, parseContext);
                 collection.add(value);
                 i = parseContext.endIndex;
                 while ((b = buf[++i]) <= ' ') ;
                 if (allowComment) {
                     if (b == '/') {
-                        b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (b == ',') {
@@ -2717,7 +2697,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     parseContext.endIndex = i;
                     return CollectionUtils.toArray(collection, elementCls);
                 }
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "', expected ',' or ']'");
             }
         }
@@ -2729,12 +2709,12 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             } else if (beginChar == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             } else {
-                if (parseContext.unMatchedEmptyAsNull && (beginChar == '"' || beginChar == '\'') && buf[fromIndex + 1] == beginChar) {
+                if (parseContext.optionConfig.unMatchedEmptyAsNull && (beginChar == '"' || beginChar == '\'') && buf[fromIndex + 1] == beginChar) {
                     parseContext.endIndex = fromIndex + 1;
                     return null;
                 }
                 // not support or custom handle ?
-                String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                 throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + beginChar + "', expected token '[' for collection type ");
             }
         }
@@ -2746,13 +2726,13 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             } else if (beginByte == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             } else {
-                if (parseContext.unMatchedEmptyAsNull && (beginByte == '"' || beginByte == '\'') && buf[fromIndex + 1] == beginByte) {
+                if (parseContext.optionConfig.unMatchedEmptyAsNull && (beginByte == '"' || beginByte == '\'') && buf[fromIndex + 1] == beginByte) {
                     parseContext.endIndex = fromIndex + 1;
                     return null;
                 }
                 char beginChar = (char) beginByte;
                 // not support or custom handle ?
-                String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                 throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + beginChar + "', expected token '[' for Collection Type ");
             }
         }
@@ -2797,7 +2777,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 Object arr = initArray(parseContext);
                 int size = size(arr);
                 int len = 0;
-                boolean allowComment = parseContext.allowComment;
+                boolean allowComment = parseContext.optionConfig.allowComment;
                 for (int i = beginIndex; ; ++i) {
                     // clear white space characters
                     while ((ch = buf[i]) <= ' ') {
@@ -2805,12 +2785,12 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     }
                     if (allowComment) {
                         if (ch == '/') {
-                            ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                            ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                         }
                     }
                     if (ch == ']') {
-                        if (len > 0 && !parseContext.allowLastEndComma) {
-                            String errorContextTextAt = createErrorContextText(buf, i);
+                        if (len > 0 && !parseContext.optionConfig.allowLastEndComma) {
+                            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the closing symbol ']' is not allowed here.");
                         }
                         parseContext.endIndex = i;
@@ -2826,7 +2806,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     while ((ch = buf[++i]) <= ' ') ;
                     if (allowComment) {
                         if (ch == '/') {
-                            ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                            ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                         }
                     }
                     if (ch == ',') {
@@ -2836,7 +2816,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         parseContext.endIndex = i;
                         return subOf(arr, len);
                     }
-                    String errorContextTextAt = createErrorContextText(buf, i);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + ch + "', expected ',' or ']'");
                 }
             }
@@ -2848,7 +2828,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 Object arr = initArray(parseContext);
                 int size = size(arr);
                 int len = 0;
-                boolean allowComment = parseContext.allowComment;
+                boolean allowComment = parseContext.optionConfig.allowComment;
                 for (int i = beginIndex; ; ++i) {
                     // clear white space characters
                     while ((b = buf[i]) <= ' ') {
@@ -2856,39 +2836,39 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     }
                     if (allowComment) {
                         if (b == '/') {
-                            b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                            b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                         }
                     }
                     if (b == ']') {
-                        if (len > 0 && !parseContext.allowLastEndComma) {
-                            String errorContextTextAt = createErrorContextText(buf, i);
+                        if (len > 0 && !parseContext.optionConfig.allowLastEndComma) {
+                            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the closing symbol ']' is not allowed here.");
                         }
                         parseContext.endIndex = i;
                         return len == 0 ? empty() : subOf(arr, len);
                     }
 
-                    Object value = getValueDeserializer().deserialize(charSource, buf, i, null, null, END_ARRAY, parseContext);
+                    Object value = getValueDeserializer().deserialize(charSource, buf, i, null, null, JSONGeneral.END_ARRAY, parseContext);
                     if (len >= size) {
                         arr = copyOf(arr, size = (size << 1));
                     }
                     setElementAt(arr, value, len++);
 
                     i = parseContext.endIndex;
-                    while ((b = buf[++i]) <= WHITE_SPACE) ;
+                    while ((b = buf[++i]) <= JSONGeneral.WHITE_SPACE) ;
                     if (allowComment) {
                         if (b == '/') {
-                            b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                            b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                         }
                     }
                     if (b == ',') {
                         continue;
                     }
-                    if (b == END_ARRAY) {
+                    if (b == JSONGeneral.END_ARRAY) {
                         parseContext.endIndex = i;
                         return subOf(arr, len);
                     }
-                    String errorContextTextAt = createErrorContextText(buf, i);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "', expected ',' or ']'");
                 }
             }
@@ -2908,65 +2888,65 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
 
             @Override
             String[] deserializeArray(CharSource charSource, char[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, JSONParseContext parseContext) throws Exception {
-                final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+                final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
                 int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
                 char c;
 
                 c = buf[i];
                 if (c == ']') {
                     parseContext.endIndex = i;
-                    return EMPTY_STRINGS;
+                    return JSONGeneral.EMPTY_STRINGS;
                 }
 
                 boolean isComma;
                 String v1 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new String[]{v1};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 String v2 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new String[]{v1, v2};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 String v3 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new String[]{v1, v2, v3};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 String v4 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new String[]{v1, v2, v3, v4};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 String v5 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new String[]{v1, v2, v3, v4, v5};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 String[] arr = parseContext.getContextStrings();
@@ -2983,77 +2963,77 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     }
                     arr[len++] = value;
                     c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                    if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                    if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                         parseContext.endIndex = i;
                         return JSONMemoryHandle.copyStrings(arr, 0, len);
                     }
                     if (!isComma) {
-                        throwUnexpectedException(buf, i, c, ',', ']');
+                        JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                     }
                 }
             }
 
             @Override
             String[] deserializeArray(CharSource charSource, byte[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, JSONParseContext parseContext) throws Exception {
-                final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+                final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
                 int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
                 byte c;
 
                 c = buf[i];
                 if (c == ']') {
                     parseContext.endIndex = i;
-                    return EMPTY_STRINGS;
+                    return JSONGeneral.EMPTY_STRINGS;
                 }
 
                 boolean isComma;
-                String v1 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, END_ARRAY, parseContext);
+                String v1 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new String[]{v1};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                String v2 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, END_ARRAY, parseContext);
+                String v2 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new String[]{v1, v2};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                String v3 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, END_ARRAY, parseContext);
+                String v3 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new String[]{v1, v2, v3};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                String v4 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, END_ARRAY, parseContext);
+                String v4 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new String[]{v1, v2, v3, v4};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                String v5 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, END_ARRAY, parseContext);
+                String v5 = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new String[]{v1, v2, v3, v4, v5};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 String[] arr = parseContext.getContextStrings();
@@ -3064,18 +3044,18 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 arr[4] = v5;
                 int size = arr.length, len = 5;
                 for (; ; ) {
-                    String value = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, END_ARRAY, parseContext);
+                    String value = (String) stringDeserializer.deserialize(charSource, buf, i, null, null, JSONGeneral.END_ARRAY, parseContext);
                     if (len >= size) {
                         arr = Arrays.copyOf(arr, size = (size << 1));
                     }
                     arr[len++] = value;
                     c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                    if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                    if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                         parseContext.endIndex = i;
                         return JSONMemoryHandle.copyStrings(arr, 0, len);
                     }
                     if (!isComma) {
-                        throwUnexpectedException(buf, i, c, ',', ']');
+                        JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                     }
                 }
             }
@@ -3118,68 +3098,68 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
         final static class PrimitiveDoubleArrayImpl extends ArrayImpl {
             @Override
             double[] deserializeArray(CharSource charSource, char[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, JSONParseContext parseContext) throws Exception {
-                final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+                final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
                 int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
                 char c;
 
                 c = buf[i];
                 if (c == ']') {
                     parseContext.endIndex = i;
-                    return EMPTY_DOUBLES;
+                    return JSONGeneral.EMPTY_DOUBLES;
                 }
 
                 boolean isComma;
                 double v1 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new double[]{v1};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 double v2 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new double[]{v1, v2};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 double v3 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new double[]{v1, v2, v3};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 double v4 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new double[]{v1, v2, v3, v4};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 double v5 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new double[]{v1, v2, v3, v4, v5};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                double[] arr = DOUBLE_ARRAY_TL.get();
+                double[] arr = JSONGeneral.DOUBLE_ARRAY_TL.get();
                 arr[0] = v1;
                 arr[1] = v2;
                 arr[2] = v3;
@@ -3193,80 +3173,80 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     }
                     arr[len++] = value;
                     c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                    if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                    if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                         parseContext.endIndex = i;
                         return JSONMemoryHandle.copyDoubles(arr, 0, len);
                     }
                     if (!isComma) {
-                        throwUnexpectedException(buf, i, c, ',', ']');
+                        JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                     }
                 }
             }
 
             @Override
             double[] deserializeArray(CharSource charSource, byte[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, JSONParseContext parseContext) throws Exception {
-                final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+                final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
                 int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
                 byte c;
 
                 c = buf[i];
                 if (c == ']') {
                     parseContext.endIndex = i;
-                    return EMPTY_DOUBLES;
+                    return JSONGeneral.EMPTY_DOUBLES;
                 }
 
                 boolean isComma;
-                double v1 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, END_ARRAY, parseContext);
+                double v1 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new double[]{v1};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                double v2 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, END_ARRAY, parseContext);
+                double v2 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new double[]{v1, v2};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                double v3 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, END_ARRAY, parseContext);
+                double v3 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new double[]{v1, v2, v3};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                double v4 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, END_ARRAY, parseContext);
+                double v4 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new double[]{v1, v2, v3, v4};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                double v5 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, END_ARRAY, parseContext);
+                double v5 = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new double[]{v1, v2, v3, v4, v5};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                double[] arr = DOUBLE_ARRAY_TL.get();
+                double[] arr = JSONGeneral.DOUBLE_ARRAY_TL.get();
                 arr[0] = v1;
                 arr[1] = v2;
                 arr[2] = v3;
@@ -3274,18 +3254,18 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 arr[4] = v5;
                 int size = arr.length, len = 5;
                 for (; ; ) {
-                    double value = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, END_ARRAY, parseContext);
+                    double value = (Double) NUMBER_DOUBLE.deserialize(charSource, buf, i, GenericParameterizedType.DoubleType, null, JSONGeneral.END_ARRAY, parseContext);
                     if (len >= size) {
                         arr = Arrays.copyOf(arr, size = (size << 1));
                     }
                     arr[len++] = value;
                     c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                    if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                    if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                         parseContext.endIndex = i;
                         return JSONMemoryHandle.copyDoubles(arr, 0, len);
                     }
                     if (!isComma) {
-                        throwUnexpectedException(buf, i, c, ',', ']');
+                        JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                     }
                 }
             }
@@ -3329,68 +3309,68 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
 
             @Override
             long[] deserializeArray(CharSource charSource, char[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, JSONParseContext parseContext) throws Exception {
-                final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+                final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
                 int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
                 char c;
 
                 c = buf[i];
                 if (c == ']') {
                     parseContext.endIndex = i;
-                    return EMPTY_LONGS;
+                    return JSONGeneral.EMPTY_LONGS;
                 }
 
                 boolean isComma;
                 long v1 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new long[]{v1};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 long v2 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new long[]{v1, v2};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 long v3 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new long[]{v1, v2, v3};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 long v4 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new long[]{v1, v2, v3, v4};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 long v5 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new long[]{v1, v2, v3, v4, v5};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                long[] arr = LONG_ARRAY_TL.get();
+                long[] arr = JSONGeneral.LONG_ARRAY_TL.get();
                 arr[0] = v1;
                 arr[1] = v2;
                 arr[2] = v3;
@@ -3404,80 +3384,80 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     }
                     arr[len++] = value;
                     c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                    if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                    if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                         parseContext.endIndex = i;
                         return JSONMemoryHandle.copyLongs(arr, 0, len);
                     }
                     if (!isComma) {
-                        throwUnexpectedException(buf, i, c, ',', ']');
+                        JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                     }
                 }
             }
 
             @Override
             long[] deserializeArray(CharSource charSource, byte[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, JSONParseContext parseContext) throws Exception {
-                final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+                final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
                 int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
                 byte c;
 
                 c = buf[i];
                 if (c == ']') {
                     parseContext.endIndex = i;
-                    return EMPTY_LONGS;
+                    return JSONGeneral.EMPTY_LONGS;
                 }
 
                 boolean isComma;
-                long v1 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, END_ARRAY, parseContext);
+                long v1 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new long[]{v1};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                long v2 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, END_ARRAY, parseContext);
+                long v2 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new long[]{v1, v2};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                long v3 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, END_ARRAY, parseContext);
+                long v3 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new long[]{v1, v2, v3};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                long v4 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, END_ARRAY, parseContext);
+                long v4 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new long[]{v1, v2, v3, v4};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                long v5 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, END_ARRAY, parseContext);
+                long v5 = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new long[]{v1, v2, v3, v4, v5};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                long[] arr = LONG_ARRAY_TL.get();
+                long[] arr = JSONGeneral.LONG_ARRAY_TL.get();
                 arr[0] = v1;
                 arr[1] = v2;
                 arr[2] = v3;
@@ -3485,18 +3465,18 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 arr[4] = v5;
                 int size = arr.length, len = 5;
                 for (; ; ) {
-                    long value = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, END_ARRAY, parseContext);
+                    long value = (Long) NUMBER_LONG.deserialize(charSource, buf, i, GenericParameterizedType.LongType, null, JSONGeneral.END_ARRAY, parseContext);
                     if (len >= size) {
                         arr = Arrays.copyOf(arr, size = (size << 1));
                     }
                     arr[len++] = value;
                     c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                    if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                    if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                         parseContext.endIndex = i;
                         return JSONMemoryHandle.copyLongs(arr, 0, len);
                     }
                     if (!isComma) {
-                        throwUnexpectedException(buf, i, c, ',', ']');
+                        JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                     }
                 }
             }
@@ -3615,68 +3595,68 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
         final static class PrimitiveIntArrayImpl extends ArrayImpl {
             @Override
             int[] deserializeArray(CharSource charSource, char[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, JSONParseContext parseContext) throws Exception {
-                final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+                final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
                 int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
                 char c;
 
                 c = buf[i];
                 if (c == ']') {
                     parseContext.endIndex = i;
-                    return EMPTY_INTS;
+                    return JSONGeneral.EMPTY_INTS;
                 }
 
                 boolean isComma;
                 int v1 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new int[]{v1};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 int v2 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new int[]{v1, v2};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 int v3 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new int[]{v1, v2, v3};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 int v4 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new int[]{v1, v2, v3, v4};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
                 int v5 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, ']', parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new int[]{v1, v2, v3, v4, v5};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                int[] arr = INT_ARRAY_TL.get();
+                int[] arr = JSONGeneral.INT_ARRAY_TL.get();
                 arr[0] = v1;
                 arr[1] = v2;
                 arr[2] = v3;
@@ -3690,80 +3670,80 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     }
                     arr[len++] = value;
                     c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                    if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                    if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                         parseContext.endIndex = i;
                         return Arrays.copyOf(arr, len);
                     }
                     if (!isComma) {
-                        throwUnexpectedException(buf, i, c, ',', ']');
+                        JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                     }
                 }
             }
 
             @Override
             int[] deserializeArray(CharSource charSource, byte[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, JSONParseContext parseContext) throws Exception {
-                final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+                final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
                 int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
                 byte c;
 
                 c = buf[i];
                 if (c == ']') {
                     parseContext.endIndex = i;
-                    return EMPTY_INTS;
+                    return JSONGeneral.EMPTY_INTS;
                 }
 
                 boolean isComma;
-                int v1 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, END_ARRAY, parseContext);
+                int v1 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new int[]{v1};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                int v2 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, END_ARRAY, parseContext);
+                int v2 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new int[]{v1, v2};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                int v3 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, END_ARRAY, parseContext);
+                int v3 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new int[]{v1, v2, v3};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                int v4 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, END_ARRAY, parseContext);
+                int v4 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new int[]{v1, v2, v3, v4};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                int v5 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, END_ARRAY, parseContext);
+                int v5 = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, JSONGeneral.END_ARRAY, parseContext);
                 c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                     parseContext.endIndex = i;
                     return new int[]{v1, v2, v3, v4, v5};
                 }
                 if (!isComma) {
-                    throwUnexpectedException(buf, i, c, ',', ']');
+                    JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                 }
 
-                int[] arr = INT_ARRAY_TL.get();
+                int[] arr = JSONGeneral.INT_ARRAY_TL.get();
                 arr[0] = v1;
                 arr[1] = v2;
                 arr[2] = v3;
@@ -3771,18 +3751,18 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 arr[4] = v5;
                 int size = arr.length, len = 5;
                 for (; ; ) {
-                    int value = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, END_ARRAY, parseContext);
+                    int value = (Integer) NUMBER_INTEGER.deserialize(charSource, buf, i, GenericParameterizedType.IntType, null, JSONGeneral.END_ARRAY, parseContext);
                     if (len >= size) {
                         arr = Arrays.copyOf(arr, size = (size << 1));
                     }
                     arr[len++] = value;
                     c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                    if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                    if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                         parseContext.endIndex = i;
                         return Arrays.copyOf(arr, len);
                     }
                     if (!isComma) {
-                        throwUnexpectedException(buf, i, c, ',', ']');
+                        JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                     }
                 }
             }
@@ -3842,18 +3822,18 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             int beginIndex = fromIndex + 1;
             char ch;
             int size = 0;
-            boolean allowComment = parseContext.allowComment;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = beginIndex; i < toIndex; ++i) {
                 while ((ch = buf[i]) <= ' ') {
                     ++i;
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ']') {
-                    if (size > 0 && !parseContext.allowLastEndComma) {
+                    if (size > 0 && !parseContext.optionConfig.allowLastEndComma) {
                         return false;
                     }
                     parseContext.endIndex = i;
@@ -3868,7 +3848,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 while ((ch = buf[++i]) <= ' ') ;
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ',') {
@@ -3876,7 +3856,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (ch == ']') {
                     parseContext.endIndex = i;
-                    parseContext.elementSize = size;
+                    parseContext.setElementSize(size);
                     return true;
                 }
                 return false;
@@ -3889,18 +3869,18 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             int beginIndex = fromIndex + 1;
             byte ch;
             int size = 0;
-            boolean allowComment = parseContext.allowComment;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = beginIndex; i < toIndex; ++i) {
                 while ((ch = buf[i]) <= ' ') {
                     ++i;
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ']') {
-                    if (size > 0 && !parseContext.allowLastEndComma) {
+                    if (size > 0 && !parseContext.optionConfig.allowLastEndComma) {
                         return false;
                     }
                     parseContext.endIndex = i;
@@ -3915,7 +3895,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 while ((ch = buf[++i]) <= ' ') ;
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ',') {
@@ -3923,7 +3903,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (ch == ']') {
                     parseContext.endIndex = i;
-                    parseContext.elementSize = size;
+                    parseContext.setElementSize(size);
                     return true;
                 }
                 return false;
@@ -3935,35 +3915,35 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             int beginIndex = fromIndex + 1;
             char ch;
             int size = 0;
-            boolean allowComment = parseContext.allowComment;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = beginIndex; ; ++i) {
                 // clear white space characters
                 if ((ch = buf[i]) <= ' ') {
-                    ch = buf[i = skipWhiteSpaces(buf, i + 1)];
+                    ch = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ']') {
-                    if (size > 0 && !parseContext.allowLastEndComma) {
-                        String errorContextTextAt = createErrorContextText(buf, i);
+                    if (size > 0 && !parseContext.optionConfig.allowLastEndComma) {
+                        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the closing symbol ']' is not allowed here.");
                     }
                     parseContext.endIndex = i;
-                    parseContext.elementSize = size;
+                    parseContext.setElementSize(size);
                     return;
                 }
                 ++size;
                 ANY.skip(charSource, buf, i, ']', parseContext);
                 i = parseContext.endIndex;
                 if ((ch = buf[++i]) <= ' ') {
-                    ch = buf[i = skipWhiteSpaces(buf, i + 1)];
+                    ch = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ',') {
@@ -3971,10 +3951,10 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (ch == ']') {
                     parseContext.endIndex = i;
-                    parseContext.elementSize = size;
+                    parseContext.setElementSize(size);
                     return;
                 }
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + ch + "', expected ',' or ']'");
             }
         }
@@ -3983,35 +3963,35 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             int beginIndex = fromIndex + 1;
             byte b;
             int size = 0;
-            boolean allowComment = parseContext.allowComment;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = beginIndex; ; ++i) {
                 // clear white space characters
                 if ((b = buf[i]) <= ' ') {
-                    b = buf[i = skipWhiteSpaces(buf, i + 1)];
+                    b = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                 }
                 if (allowComment) {
                     if (b == '/') {
-                        b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (b == ']') {
-                    if (size > 0 && !parseContext.allowLastEndComma) {
-                        String errorContextTextAt = createErrorContextText(buf, i);
+                    if (size > 0 && !parseContext.optionConfig.allowLastEndComma) {
+                        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the closing symbol ']' is not allowed here.");
                     }
                     parseContext.endIndex = i;
-                    parseContext.elementSize = size;
+                    parseContext.setElementSize(size);
                     return;
                 }
                 ++size;
-                ANY.skip(charSource, buf, i, END_ARRAY, parseContext);
+                ANY.skip(charSource, buf, i, JSONGeneral.END_ARRAY, parseContext);
                 i = parseContext.endIndex;
                 if ((b = buf[++i]) <= ' ') {
-                    b = buf[i = skipWhiteSpaces(buf, i + 1)];
+                    b = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                 }
                 if (allowComment) {
                     if (b == '/') {
-                        b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (b == ',') {
@@ -4019,10 +3999,10 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (b == ']') {
                     parseContext.endIndex = i;
-                    parseContext.elementSize = size;
+                    parseContext.setElementSize(size);
                     return;
                 }
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "', expected ',' or ']'");
             }
             // throw new JSONException("Syntax error, cannot find closing symbol ']' matching '['");
@@ -4033,7 +4013,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             if (collectionCls == null || collectionCls == List.class || collectionCls == ArrayList.class) {
                 return new ArrayList<Object>(5);
             } else {
-                return createCollectionInstance(collectionCls);
+                return JSONGeneral.createCollectionInstance(collectionCls);
             }
         }
 
@@ -4054,7 +4034,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 valueGenType = GenericParameterizedType.AnyType;
             }
             JSONTypeDeserializer valueDeserializer = getValueDeserializer(valueGenType);
-            final boolean allowComment = parseContext.allowComment;
+            final boolean allowComment = parseContext.optionConfig.allowComment;
             int beginIndex = fromIndex + 1;
             char ch;
             for (int i = beginIndex; /*i < toIndex*/ ; ++i) {
@@ -4063,12 +4043,12 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ']') {
-                    if (!collection.isEmpty() && !parseContext.allowLastEndComma) {
-                        String errorContextTextAt = createErrorContextText(buf, i);
+                    if (!collection.isEmpty() && !parseContext.optionConfig.allowLastEndComma) {
+                        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the closing symbol ']' is not allowed here.");
                     }
                     parseContext.endIndex = i;
@@ -4081,7 +4061,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 while ((ch = buf[++i]) <= ' ') ;
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ',') {
@@ -4091,7 +4071,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     parseContext.endIndex = i;
                     return collection;
                 }
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + ch + "', expected ',' or ']'");
             }
         }
@@ -4109,7 +4089,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 valueGenType = GenericParameterizedType.AnyType;
             }
             JSONTypeDeserializer valueDeserializer = getValueDeserializer(valueGenType);
-            final boolean allowComment = parseContext.allowComment;
+            final boolean allowComment = parseContext.optionConfig.allowComment;
             int beginIndex = fromIndex + 1;
             byte b;
             for (int i = beginIndex; /*i < toIndex*/ ; ++i) {
@@ -4118,24 +4098,24 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (allowComment) {
                     if (b == '/') {
-                        b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (b == ']') {
-                    if (!collection.isEmpty() && !parseContext.allowLastEndComma) {
-                        String errorContextTextAt = createErrorContextText(buf, i);
+                    if (!collection.isEmpty() && !parseContext.optionConfig.allowLastEndComma) {
+                        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the closing symbol ']' is not allowed here.");
                     }
                     parseContext.endIndex = i;
                     return collection;
                 }
-                Object value = valueDeserializer.deserialize(charSource, buf, i, valueGenType, null, END_ARRAY, parseContext);
+                Object value = valueDeserializer.deserialize(charSource, buf, i, valueGenType, null, JSONGeneral.END_ARRAY, parseContext);
                 collection.add(value);
                 i = parseContext.endIndex;
                 while ((b = buf[++i]) <= ' ') ;
                 if (allowComment) {
                     if (b == '/') {
-                        b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (b == ',') {
@@ -4145,7 +4125,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     parseContext.endIndex = i;
                     return collection;
                 }
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "', expected ',' or ']'");
             }
         }
@@ -4157,12 +4137,12 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             } else if (beginChar == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             } else {
-                if (parseContext.unMatchedEmptyAsNull && (beginChar == '"' || beginChar == '\'') && buf[fromIndex + 1] == beginChar) {
+                if (parseContext.optionConfig.unMatchedEmptyAsNull && (beginChar == '"' || beginChar == '\'') && buf[fromIndex + 1] == beginChar) {
                     parseContext.endIndex = fromIndex + 1;
                     return null;
                 }
                 // not support or custom handle ?
-                String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                 throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', expected token character '[', but found '" + beginChar + "' for Collection Type ");
             }
         }
@@ -4175,12 +4155,12 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             if (beginByte == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             }
-            if (parseContext.unMatchedEmptyAsNull && (beginByte == DOUBLE_QUOTATION || beginByte == '\'') && buf[fromIndex + 1] == beginByte) {
+            if (parseContext.optionConfig.unMatchedEmptyAsNull && (beginByte == JSONGeneral.DOUBLE_QUOTATION || beginByte == '\'') && buf[fromIndex + 1] == beginByte) {
                 parseContext.endIndex = fromIndex + 1;
                 return null;
             }
             // not support or custom handle ?
-            String errorContextTextAt = createErrorContextText(buf, fromIndex);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
             throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', expected token character '[', but found '" + (char) beginByte + "' for Collection Type ");
         }
 
@@ -4204,7 +4184,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 try {
                     Class<?> targetClass = constructionClass;
                     if (targetClass.isInterface() || Modifier.isAbstract(targetClass.getModifiers())) {
-                        JSONImplInstCreator implInstCreator = getJSONImplInstCreator(targetClass);
+                        JSONImplInstCreator implInstCreator = JSONGeneral.getJSONImplInstCreator(targetClass);
                         if (implInstCreator != null) {
                             return (Collection) implInstCreator.create(parameterizedType);
                         } else {
@@ -4231,7 +4211,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             }
 
             ArrayList<?> deserializeCollection(CharSource charSource, char[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, JSONParseContext parseContext) throws Exception {
-                final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+                final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
                 char c;
                 int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
 
@@ -4242,22 +4222,23 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
 
                 boolean isComma;
-                final ArrayList<Object> collection = new ArrayList<Object>(10);
+                final ArrayList<Object> collection = new ArrayList<Object>(16); // ofArrayList(16, v1, v2, v3);
+
                 for (; ; ) {
                     collection.add(valueDeserializer.deserialize(charSource, buf, i, valueType, null, ']', parseContext));
                     c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                    if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                    if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                         parseContext.endIndex = i;
                         return collection;
                     }
                     if (!isComma) {
-                        throwUnexpectedException(buf, i, c, ',', ']');
+                        JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                     }
                 }
             }
 
             ArrayList<Object> deserializeCollection(CharSource charSource, byte[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, JSONParseContext parseContext) throws Exception {
-                final boolean allowComment = parseContext.allowComment, allowLastEndComma = parseContext.allowLastEndComma;
+                final boolean allowComment = parseContext.optionConfig.allowComment, allowLastEndComma = parseContext.optionConfig.allowLastEndComma;
                 byte c;
                 int i = skipWhiteSpacesOrComment(buf, fromIndex, allowComment, parseContext);
 
@@ -4268,18 +4249,17 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
 
                 boolean isComma;
-                final ArrayList<Object> collection = new ArrayList<Object>(10); // ofArrayList(10, v1, v2, v3, v4, v5);
+                final ArrayList<Object> collection = new ArrayList<Object>(16);
                 for (; ; ) {
-                    collection.add(valueDeserializer.deserialize(charSource, buf, i, valueType, null, END_ARRAY, parseContext));
+                    collection.add(valueDeserializer.deserialize(charSource, buf, i, valueType, null, JSONGeneral.END_ARRAY, parseContext));
                     c = buf[i = skipWhiteSpacesOrComment(buf, parseContext.endIndex, allowComment, parseContext)];
-                    if (c == END_ARRAY || ((isComma = c == COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == END_ARRAY) && allowLastEndComma)) {
+                    if (c == JSONGeneral.END_ARRAY || ((isComma = c == JSONGeneral.COMMA) && (buf[i = skipWhiteSpacesOrComment(buf, i, allowComment, parseContext)] == JSONGeneral.END_ARRAY) && allowLastEndComma)) {
                         parseContext.endIndex = i;
                         return collection;
                     }
                     if (!isComma) {
-                        throwUnexpectedException(buf, i, c, ',', ']');
+                        JSONGeneral.throwUnexpectedException(buf, i, c, ',', ']');
                     }
-
                 }
             }
         }
@@ -4325,14 +4305,14 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
         boolean validate(CharSource charSource, char[] buf, int fromIndex, int toIndex, int endToken, JSONParseContext parseContext) throws Exception {
             boolean empty = true;
             char ch;
-            final boolean allowComment = parseContext.allowComment;
+            final boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = fromIndex + 1; i < toIndex; ++i) {
                 while ((ch = buf[i]) <= ' ') {
                     ++i;
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == '"') {
@@ -4341,14 +4321,14 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     empty = false;
                 } else {
                     if (ch == '}') {
-                        if (!empty && !parseContext.allowLastEndComma) {
+                        if (!empty && !parseContext.optionConfig.allowLastEndComma) {
                             return false;
                         }
                         parseContext.endIndex = i;
                         return true;
                     }
                     if (ch == '\'') {
-                        if (parseContext.allowSingleQuotes) {
+                        if (parseContext.optionConfig.allowSingleQuotes) {
                             CHAR_SEQUENCE.skip(charSource, buf, i, ch, parseContext);
                             i = parseContext.endIndex + 1;
                             empty = false;
@@ -4356,7 +4336,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                             return false;
                         }
                     } else {
-                        if (parseContext.allowUnquotedFieldNames) {
+                        if (parseContext.optionConfig.allowUnquotedFieldNames) {
                             while (i + 1 < toIndex && buf[++i] != ':') ;
                             empty = false;
                         } else {
@@ -4369,14 +4349,14 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ':') {
                     while ((ch = buf[++i]) <= ' ') ;
                     if (allowComment) {
                         if (ch == '/') {
-                            i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
+                            i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
                         }
                     }
                     boolean result = ANY.validate(charSource, buf, i, toIndex, '}', parseContext);
@@ -4387,7 +4367,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     while ((ch = buf[++i]) <= ' ') ;
                     if (allowComment) {
                         if (ch == '/') {
-                            ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                            ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                         }
                     }
                     if (ch == ',') {
@@ -4409,14 +4389,14 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
         boolean validate(CharSource charSource, byte[] buf, int fromIndex, int toIndex, int endToken, JSONParseContext parseContext) throws Exception {
             boolean empty = true;
             byte ch;
-            final boolean allowComment = parseContext.allowComment;
+            final boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = fromIndex + 1; i < toIndex; ++i) {
                 while ((ch = buf[i]) <= ' ') {
                     ++i;
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == '"') {
@@ -4425,14 +4405,14 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     empty = false;
                 } else {
                     if (ch == '}') {
-                        if (!empty && !parseContext.allowLastEndComma) {
+                        if (!empty && !parseContext.optionConfig.allowLastEndComma) {
                             return false;
                         }
                         parseContext.endIndex = i;
                         return true;
                     }
                     if (ch == '\'') {
-                        if (parseContext.allowSingleQuotes) {
+                        if (parseContext.optionConfig.allowSingleQuotes) {
                             CHAR_SEQUENCE.skip(charSource, buf, i, ch, parseContext);
                             i = parseContext.endIndex + 1;
                             empty = false;
@@ -4440,7 +4420,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                             return false;
                         }
                     } else {
-                        if (parseContext.allowUnquotedFieldNames) {
+                        if (parseContext.optionConfig.allowUnquotedFieldNames) {
                             while (i + 1 < toIndex && buf[++i] != ':') ;
                             empty = false;
                         } else {
@@ -4453,14 +4433,14 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ':') {
                     while ((ch = buf[++i]) <= ' ') ;
                     if (allowComment) {
                         if (ch == '/') {
-                            i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
+                            i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
                         }
                     }
                     boolean result = ANY.validate(charSource, buf, i, toIndex, (byte) '}', parseContext);
@@ -4471,7 +4451,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     while ((ch = buf[++i]) <= ' ') ;
                     if (allowComment) {
                         if (ch == '/') {
-                            ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                            ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                         }
                     }
                     if (ch == ',') {
@@ -4492,14 +4472,14 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
         void skip(CharSource charSource, char[] buf, int fromIndex, JSONParseContext parseContext) throws Exception {
             boolean empty = true;
             char ch;
-            final boolean allowComment = parseContext.allowComment;
+            final boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = fromIndex + 1; ; ++i) {
                 if ((ch = buf[i]) <= ' ') {
-                    ch = buf[i = skipWhiteSpaces(buf, i + 1)];
+                    ch = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == '"') {
@@ -4508,54 +4488,54 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     empty = false;
                 } else {
                     if (ch == '}') {
-                        if (!empty && !parseContext.allowLastEndComma) {
-                            String errorContextTextAt = createErrorContextText(buf, i);
+                        if (!empty && !parseContext.optionConfig.allowLastEndComma) {
+                            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the closing symbol '}' is not allowed here.");
                         }
                         parseContext.endIndex = i;
                         return;
                     }
                     if (ch == '\'') {
-                        if (parseContext.allowSingleQuotes) {
+                        if (parseContext.optionConfig.allowSingleQuotes) {
                             CHAR_SEQUENCE.skip(charSource, buf, i, '\'', parseContext);
                             i = parseContext.endIndex + 1;
                             empty = false;
                         } else {
-                            String errorContextTextAt = createErrorContextText(buf, i);
+                            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the single quote symbol ' is not allowed here.");
                         }
                     } else {
-                        if (parseContext.allowUnquotedFieldNames) {
+                        if (parseContext.optionConfig.allowUnquotedFieldNames) {
                             while (buf[++i] != ':') ;
                             empty = false;
                         }
                     }
                 }
                 if ((ch = buf[i]) <= ' ') {
-                    ch = buf[i = skipWhiteSpaces(buf, i + 1)];
+                    ch = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ':') {
                     if ((ch = buf[++i]) <= ' ') {
-                        ch = buf[i = skipWhiteSpaces(buf, i + 1)];
+                        ch = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                     }
                     if (allowComment) {
                         if (ch == '/') {
-                            i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
+                            i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
                         }
                     }
                     ANY.skip(charSource, buf, i, '}', parseContext);
                     i = parseContext.endIndex;
                     if ((ch = buf[++i]) <= ' ') {
-                        ch = buf[i = skipWhiteSpaces(buf, i + 1)];
+                        ch = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                     }
                     if (allowComment) {
                         if (ch == '/') {
-                            ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                            ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                         }
                     }
                     if (ch == ',') {
@@ -4565,10 +4545,10 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         parseContext.endIndex = i;
                         return;
                     }
-                    String errorContextTextAt = createErrorContextText(buf, i);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + ch + "', expected ',' or '}'");
                 } else {
-                    String errorContextTextAt = createErrorContextText(buf, i);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + ch + "', token ':' is expected.");
                 }
             }
@@ -4577,14 +4557,14 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
         void skip(CharSource charSource, byte[] buf, int fromIndex, JSONParseContext parseContext) throws Exception {
             boolean empty = true;
             byte b;
-            final boolean allowComment = parseContext.allowComment;
+            final boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = fromIndex + 1; ; ++i) {
                 if ((b = buf[i]) <= ' ') {
-                    b = buf[i = skipWhiteSpaces(buf, i + 1)];
+                    b = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                 }
                 if (allowComment) {
                     if (b == '/') {
-                        b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (b == '"') {
@@ -4593,24 +4573,24 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     empty = false;
                 } else {
                     if (b == '}') {
-                        if (!empty && !parseContext.allowLastEndComma) {
-                            String errorContextTextAt = createErrorContextText(buf, i);
+                        if (!empty && !parseContext.optionConfig.allowLastEndComma) {
+                            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the closing symbol '}' is not allowed here.");
                         }
                         parseContext.endIndex = i;
                         return;
                     }
                     if (b == '\'') {
-                        if (parseContext.allowSingleQuotes) {
+                        if (parseContext.optionConfig.allowSingleQuotes) {
                             CHAR_SEQUENCE.skip(charSource, buf, i, b, parseContext);
                             i = parseContext.endIndex + 1;
                             empty = false;
                         } else {
-                            String errorContextTextAt = createErrorContextText(buf, i);
+                            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                             throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "' the single quote symbol ' is not allowed here.");
                         }
                     } else {
-                        if (parseContext.allowUnquotedFieldNames) {
+                        if (parseContext.optionConfig.allowUnquotedFieldNames) {
                             // :
                             while (buf[++i] != ':') ;
                             empty = false;
@@ -4618,30 +4598,30 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     }
                 }
                 if ((b = buf[i]) <= ' ') {
-                    b = buf[i = skipWhiteSpaces(buf, i + 1)];
+                    b = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                 }
                 if (allowComment) {
                     if (b == '/') {
-                        b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (b == ':') {
                     if ((b = buf[++i]) <= ' ') {
-                        b = buf[i = skipWhiteSpaces(buf, i + 1)];
+                        b = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                     }
                     if (allowComment) {
                         if (b == '/') {
-                            i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
+                            i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
                         }
                     }
-                    ANY.skip(charSource, buf, i, END_OBJECT, parseContext);
+                    ANY.skip(charSource, buf, i, JSONGeneral.END_OBJECT, parseContext);
                     i = parseContext.endIndex;
                     if ((b = buf[++i]) <= ' ') {
-                        b = buf[i = skipWhiteSpaces(buf, i + 1)];
+                        b = buf[i = JSONGeneral.skipWhiteSpaces(buf, i + 1)];
                     }
                     if (allowComment) {
                         if (b == '/') {
-                            b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                            b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                         }
                     }
                     if (b == ',') {
@@ -4651,10 +4631,10 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         parseContext.endIndex = i;
                         return;
                     }
-                    String errorContextTextAt = createErrorContextText(buf, i);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "', expected ',' or '}'");
                 } else {
-                    String errorContextTextAt = createErrorContextText(buf, i);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "', token ':' is expected.");
                 }
             }
@@ -4668,12 +4648,12 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             if (beginChar == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             }
-            if (parseContext.unMatchedEmptyAsNull && beginChar == '"' && buf[fromIndex + 1] == '"') {
+            if (parseContext.optionConfig.unMatchedEmptyAsNull && beginChar == '"' && buf[fromIndex + 1] == '"') {
                 parseContext.endIndex = fromIndex + 1;
                 return null;
             }
             // not support or custom handle ?
-            String errorContextTextAt = createErrorContextText(buf, fromIndex);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
             throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + beginChar + "' for Map Type, expected '{' ");
         }
 
@@ -4686,12 +4666,12 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             if (beginChar == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             }
-            if (parseContext.unMatchedEmptyAsNull && beginChar == '"' && buf[fromIndex + 1] == '"') {
+            if (parseContext.optionConfig.unMatchedEmptyAsNull && beginChar == '"' && buf[fromIndex + 1] == '"') {
                 parseContext.endIndex = fromIndex + 1;
                 return null;
             }
             // not support or custom handle ?
-            String errorContextTextAt = createErrorContextText(buf, fromIndex);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
             throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + beginChar + "' for Map Type, expected '{' ");
         }
 
@@ -4708,7 +4688,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
         }
 
         Map<Object, Object> createMap(GenericParameterizedType<?> parameterizedType) {
-            return createMapInstance(parameterizedType);
+            return JSONGeneral.createMapInstance(parameterizedType);
         }
 
         GenericParameterizedType<?> getValueType(GenericParameterizedType<?> parameterizedType) {
@@ -4727,11 +4707,11 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             } else {
                 instance = createMap(parameterizedType);
             }
-            int toIndex = parseContext.toIndex;
+            int toIndex = buf.length;
             boolean empty = true;
             char ch;
-            boolean disableCacheMapKey = parseContext.disableCacheMapKey;
-            boolean allowComment = parseContext.allowComment;
+            boolean disableCacheMapKey = parseContext.optionConfig.disableCacheMapKey;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = fromIndex + 1; ; ++i) {
                 while ((ch = buf[i]) <= ' ') {
                     ++i;
@@ -4739,7 +4719,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
 
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
 
@@ -4754,26 +4734,26 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     ++i;
                 } else {
                     if (ch == '}') {
-                        if (!empty && !parseContext.allowLastEndComma) {
+                        if (!empty && !parseContext.optionConfig.allowLastEndComma) {
                             throw new JSONException("Syntax error, at pos " + i + ", the closing symbol '}' is not allowed here.");
                         }
                         parseContext.endIndex = i;
                         return instance;
                     }
                     if (ch == '\'') {
-                        if (parseContext.allowSingleQuotes) {
+                        if (parseContext.optionConfig.allowSingleQuotes) {
                             while (i + 1 < toIndex && (buf[++i] != '\'' || buf[i - 1] == '\\')) ;
                             empty = false;
                             ++i;
-                            mapKey = parseKeyOfMap(buf, fieldKeyFrom, i, false);
+                            mapKey = JSONGeneral.parseKeyOfMap(buf, fieldKeyFrom, i, false);
                         } else {
                             throw new JSONException("Syntax error, at pos " + i + ", the single quote symbol ' is not allowed here.");
                         }
                     } else {
-                        if (parseContext.allowUnquotedFieldNames) {
+                        if (parseContext.optionConfig.allowUnquotedFieldNames) {
                             while (i + 1 < toIndex && buf[++i] != ':') ;
                             empty = false;
-                            mapKey = parseKeyOfMap(buf, fieldKeyFrom, i, true);
+                            mapKey = JSONGeneral.parseKeyOfMap(buf, fieldKeyFrom, i, true);
                         } else {
                             // check if null ?
                             int j = i;
@@ -4784,7 +4764,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                                 ++i;
                             }
                             if (!isNullKey) {
-                                String errorContextTextAt = createErrorContextText(buf, j);
+                                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, j);
                                 throw new JSONException("Syntax error, at pos " + j + ", context text by '" + errorContextTextAt + "', unexpected '" + ch + "', expected '\"' or use option ReadOption.AllowUnquotedFieldNames ");
                             }
                         }
@@ -4796,7 +4776,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (allowComment) {
                     if (ch == '/') {
-                        ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (ch == ':') {
@@ -4806,7 +4786,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     while ((ch = buf[++i]) <= ' ') ;
                     if (allowComment) {
                         if (ch == '/') {
-                            ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                            ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                         }
                     }
                     JSONTypeDeserializer valueDeserializer = getValueDeserializer(parameterizedType);
@@ -4816,7 +4796,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     while ((ch = buf[++i]) <= ' ') ;
                     if (allowComment) {
                         if (ch == '/') {
-                            ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                            ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                         }
                     }
                     if (ch == ',') {
@@ -4827,10 +4807,10 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         return instance;
                     }
 
-                    String errorContextTextAt = createErrorContextText(buf, i);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + ch + "', expected ',' or '}'");
                 } else {
-                    String errorContextTextAt = createErrorContextText(buf, i);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + ch + "', token ':' is expected.");
                 }
             }
@@ -4842,13 +4822,13 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             if (obj != null) {
                 instance = (Map) obj;
             } else {
-                instance = createMapInstance(parameterizedType);
+                instance = JSONGeneral.createMapInstance(parameterizedType);
             }
-            int toIndex = parseContext.toIndex;
+            int toIndex = buf.length;
             boolean empty = true;
             byte b;
-            boolean disableCacheMapKey = parseContext.disableCacheMapKey;
-            boolean allowComment = parseContext.allowComment;
+            boolean disableCacheMapKey = parseContext.optionConfig.disableCacheMapKey;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             for (int i = fromIndex + 1; ; ++i) {
                 while ((b = buf[i]) <= ' ') {
                     ++i;
@@ -4856,7 +4836,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
 
                 if (allowComment) {
                     if (b == '/') {
-                        b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
 
@@ -4871,26 +4851,26 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     ++i;
                 } else {
                     if (b == '}') {
-                        if (!empty && !parseContext.allowLastEndComma) {
+                        if (!empty && !parseContext.optionConfig.allowLastEndComma) {
                             throw new JSONException("Syntax error, at pos " + i + ", the closing symbol '}' is not allowed here.");
                         }
                         parseContext.endIndex = i;
                         return instance;
                     }
                     if (b == '\'') {
-                        if (parseContext.allowSingleQuotes) {
+                        if (parseContext.optionConfig.allowSingleQuotes) {
                             while (i + 1 < toIndex && (buf[++i] != '\'' || buf[i - 1] == '\\')) ;
                             empty = false;
                             ++i;
-                            mapKey = parseKeyOfMap(buf, fieldKeyFrom, i, false);
+                            mapKey = JSONGeneral.parseKeyOfMap(buf, fieldKeyFrom, i, false);
                         } else {
                             throw new JSONException("Syntax error, at pos " + i + ", the single quote symbol ' is not allowed here.");
                         }
                     } else {
-                        if (parseContext.allowUnquotedFieldNames) {
+                        if (parseContext.optionConfig.allowUnquotedFieldNames) {
                             while (i + 1 < toIndex && buf[++i] != ':') ;
                             empty = false;
-                            mapKey = parseKeyOfMap(buf, fieldKeyFrom, i, true);
+                            mapKey = JSONGeneral.parseKeyOfMap(buf, fieldKeyFrom, i, true);
                         } else {
                             // check if null ?
                             int j = i;
@@ -4901,7 +4881,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                                 ++i;
                             }
                             if (!isNullKey) {
-                                String errorContextTextAt = createErrorContextText(buf, j);
+                                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, j);
                                 throw new JSONException("Syntax error, at pos " + j + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "', expected '\"' or use option ReadOption.AllowUnquotedFieldNames ");
                             }
                         }
@@ -4913,7 +4893,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 }
                 if (allowComment) {
                     if (b == '/') {
-                        b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                        b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                     }
                 }
                 if (b == ':') {
@@ -4923,17 +4903,17 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     while ((b = buf[++i]) <= ' ') ;
                     if (allowComment) {
                         if (b == '/') {
-                            i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
+                            i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
                         }
                     }
 
-                    Object value = getValueDeserializer(parameterizedType).deserialize(charSource, buf, i, getValueType(parameterizedType), null, END_OBJECT, parseContext);
+                    Object value = getValueDeserializer(parameterizedType).deserialize(charSource, buf, i, getValueType(parameterizedType), null, JSONGeneral.END_OBJECT, parseContext);
                     instance.put(key, value);
                     i = parseContext.endIndex;
-                    while ((b = buf[++i]) <= WHITE_SPACE) ;
+                    while ((b = buf[++i]) <= JSONGeneral.WHITE_SPACE) ;
                     if (allowComment) {
                         if (b == '/') {
-                            b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                            b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                         }
                     }
                     if (b == ',') {
@@ -4944,10 +4924,10 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         return instance;
                     }
 
-                    String errorContextTextAt = createErrorContextText(buf, i);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "', expected ',' or '}'");
                 } else {
-                    String errorContextTextAt = createErrorContextText(buf, i);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                     throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "', token ':' is expected.");
                 }
             }
@@ -5011,11 +4991,11 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 case 'n':
                     return parseNull(buf, fromIndex, parseContext);
                 default: {
-                    if (parseContext.unMatchedEmptyAsNull && beginChar == '"' && buf[fromIndex + 1] == '"') {
+                    if (parseContext.optionConfig.unMatchedEmptyAsNull && beginChar == '"' && buf[fromIndex + 1] == '"') {
                         parseContext.endIndex = fromIndex + 1;
                         return null;
                     }
-                    String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                     throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + beginChar + "' , expected '{' ");
                 }
             }
@@ -5030,11 +5010,11 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 case 'n':
                     return parseNull(buf, fromIndex, parseContext);
                 default: {
-                    if (parseContext.unMatchedEmptyAsNull && beginChar == '"' && buf[fromIndex + 1] == '"') {
+                    if (parseContext.optionConfig.unMatchedEmptyAsNull && beginChar == '"' && buf[fromIndex + 1] == '"') {
                         parseContext.endIndex = fromIndex + 1;
                         return null;
                     }
-                    String errorContextTextAt = createErrorContextText(buf, fromIndex);
+                    String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
                     throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + beginChar + "' , expected '{' ");
                 }
             }
@@ -5206,7 +5186,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     return parseFalse(buf, fromIndex, parseContext);
                 }
                 default: {
-                    return NUMBER.deserialize(charSource, buf, fromIndex, parseContext.useBigDecimalAsDefault ? GenericParameterizedType.BigDecimalType : GenericParameterizedType.AnyType, null, endToken, parseContext);
+                    return NUMBER.deserialize(charSource, buf, fromIndex, parseContext.optionConfig.useBigDecimalAsDefault ? GenericParameterizedType.BigDecimalType : GenericParameterizedType.AnyType, null, endToken, parseContext);
                 }
             }
         }
@@ -5266,9 +5246,9 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             while ((ch = buf[i]) <= ' ') {
                 ++i;
             }
-            if (parseContext.allowComment) {
+            if (parseContext.optionConfig.allowComment) {
                 if (ch == '/') {
-                    ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                    ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                 }
             }
             boolean matched = false;
@@ -5287,7 +5267,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         ++i;
                     }
                 } else {
-                    if (parseContext.allowUnquotedFieldNames) {
+                    if (parseContext.optionConfig.allowUnquotedFieldNames) {
                         char atChar = buf[i++];
                         char cChar = buf[i++];
                         while ((ch = buf[i]) <= ' ') {
@@ -5305,16 +5285,16 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             while ((ch = buf[i]) <= ' ') {
                 ++i;
             }
-            if (parseContext.allowComment) {
+            if (parseContext.optionConfig.allowComment) {
                 if (ch == '/') {
-                    ch = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                    ch = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                 }
             }
             if (ch == ':') {
                 while ((ch = buf[++i]) <= ' ') ;
-                if (parseContext.allowComment) {
+                if (parseContext.optionConfig.allowComment) {
                     if (ch == '/') {
-                        i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
+                        i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
                     }
                 }
                 Object value = ANY.deserialize(charSource, buf, i, null, null, '}', parseContext);
@@ -5324,7 +5304,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                     return null;
                 }
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + ch + "', token ':' is expected.");
             }
         }
@@ -5339,9 +5319,9 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             while ((b = buf[i]) <= ' ') {
                 ++i;
             }
-            if (parseContext.allowComment) {
+            if (parseContext.optionConfig.allowComment) {
                 if (b == '/') {
-                    b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                    b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                 }
             }
             boolean matched = false;
@@ -5360,7 +5340,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                         ++i;
                     }
                 } else {
-                    if (parseContext.allowUnquotedFieldNames) {
+                    if (parseContext.optionConfig.allowUnquotedFieldNames) {
                         byte atChar = buf[i++];
                         byte cChar = buf[i++];
                         while ((b = buf[i]) <= ' ') {
@@ -5378,26 +5358,26 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             while ((b = buf[i]) <= ' ') {
                 ++i;
             }
-            if (parseContext.allowComment) {
+            if (parseContext.optionConfig.allowComment) {
                 if (b == '/') {
-                    b = buf[i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
+                    b = buf[i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext)];
                 }
             }
             if (b == ':') {
                 while ((b = buf[++i]) <= ' ') ;
-                if (parseContext.allowComment) {
+                if (parseContext.optionConfig.allowComment) {
                     if (b == '/') {
-                        i = clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
+                        i = JSONGeneral.clearCommentAndWhiteSpaces(buf, i + 1, parseContext);
                     }
                 }
-                Object value = ANY.deserialize(charSource, buf, i, null, null, END_OBJECT, parseContext);
+                Object value = ANY.deserialize(charSource, buf, i, null, null, JSONGeneral.END_OBJECT, parseContext);
                 if (value instanceof String) {
                     return ((String) value).trim();
                 } else {
                     return null;
                 }
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "', token ':' is expected.");
             }
         }
@@ -5476,7 +5456,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 parseContext.endIndex = i;
                 return deserializer.pojo(deserializer.createPojo());
             } else {
-                String errorContextTextAt = createErrorContextText(buf, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + ch + "', expected ',' or '}'");
             }
 //            return deserializer.deserializePojo(charSource, buf, parseContext.endIndex, toIndex, parameterizedType, defaultValue, endToken, parseContext);
@@ -5500,7 +5480,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 parseContext.endIndex = i;
                 return deserializer.pojo(deserializer.createPojo());
             } else {
-                String errorContextTextAt = createErrorContextText(bytes, i);
+                String errorContextTextAt = JSONGeneral.createErrorContextText(bytes, i);
                 throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) b + "', expected ',' or '}'");
             }
             // return deserializer.deserializePojo(charSource, bytes, fromIndex, toIndex, parameterizedType, defaultValue, endToken, parseContext);
@@ -5511,7 +5491,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
      * 反序列化null
      */
     protected final static Object parseNull(byte[] bytes, final int fromIndex, JSONParseContext parseContext) {
-        if (JSONMemoryHandle.getInt(bytes, fromIndex) == NULL_INT/*bytes[fromIndex + 1] == 'u' && bytes[fromIndex + 2] == 'l' && bytes[endIndex] == 'l'*/) {
+        if (JSONMemoryHandle.getInt(bytes, fromIndex) == JSONGeneral.NULL_INT/*bytes[fromIndex + 1] == 'u' && bytes[fromIndex + 2] == 'l' && bytes[endIndex] == 'l'*/) {
             parseContext.endIndex = fromIndex + 3;
             return null;
         }
@@ -5519,14 +5499,14 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             parseContext.validateFail = true;
             return null;
         }
-        throw new JSONException("Syntax error, at pos " + fromIndex + ", expected 'null' because it starts with 'n', but found text '" + new String(bytes, fromIndex, Math.min(parseContext.toIndex - fromIndex + 1, 4)) + "'");
+        throw new JSONException("Syntax error, at pos " + fromIndex + ", expected 'null' because it starts with 'n', but found text '" + new String(bytes, fromIndex, Math.min(bytes.length - fromIndex + 1, 4)) + "'");
     }
 
     /**
      * 反序列化null
      */
     protected final static Object parseNull(char[] buf, final int fromIndex, JSONParseContext parseContext) {
-        if (JSONMemoryHandle.JSON_ENDIAN.getLong(buf, fromIndex) == NULL_LONG) {
+        if (JSONMemoryHandle.JSON_ENDIAN.getLong(buf, fromIndex) == JSONGeneral.NULL_LONG) {
             parseContext.endIndex = fromIndex + 3;
             return null;
         }
@@ -5534,11 +5514,11 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             parseContext.validateFail = true;
             return null;
         }
-        throw new JSONException("Syntax error, at pos " + fromIndex + ", expected 'null' because it starts with 'n', but found text '" + new String(buf, fromIndex, Math.min(parseContext.toIndex - fromIndex + 1, 4)) + "'");
+        throw new JSONException("Syntax error, at pos " + fromIndex + ", expected 'null' because it starts with 'n', but found text '" + new String(buf, fromIndex, Math.min(buf.length - fromIndex + 1, 4)) + "'");
     }
 
     protected static final boolean parseTrue(char[] buf, final int fromIndex, JSONParseContext parseContext) {
-        if (JSONMemoryHandle.JSON_ENDIAN.getLong(buf, fromIndex) == TRUE_LONG) {
+        if (JSONMemoryHandle.JSON_ENDIAN.getLong(buf, fromIndex) == JSONGeneral.TRUE_LONG) {
             parseContext.endIndex = fromIndex + 3;
             return true;
         }
@@ -5546,12 +5526,12 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             parseContext.validateFail = true;
             return false;
         }
-        int len = Math.min(parseContext.toIndex - fromIndex + 1, 4);
+        int len = Math.min(buf.length - fromIndex + 1, 4);
         throw new JSONException("Syntax error, at pos " + fromIndex + ", expected 'true' because it starts with 't', but found text '" + new String(buf, fromIndex, len) + "'");
     }
 
     protected static final boolean parseFalse(char[] buf, final int fromIndex, JSONParseContext parseContext) {
-        if (JSONMemoryHandle.JSON_ENDIAN.getLong(buf, fromIndex + 1) == ALSE_LONG) {
+        if (JSONMemoryHandle.JSON_ENDIAN.getLong(buf, fromIndex + 1) == JSONGeneral.ALSE_LONG) {
             parseContext.endIndex = fromIndex + 4;
             return false;
         }
@@ -5559,12 +5539,12 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             parseContext.validateFail = true;
             return false;
         }
-        int len = Math.min(parseContext.toIndex - fromIndex + 1, 5);
+        int len = Math.min(buf.length - fromIndex + 1, 5);
         throw new JSONException("Syntax error, at pos " + fromIndex + ", expected 'false' because it starts with 'f', but found text '" + new String(buf, fromIndex, len) + "'");
     }
 
     protected final static boolean parseTrue(byte[] bytes, final int fromIndex, JSONParseContext parseContext) {
-        if (JSONMemoryHandle.getInt(bytes, fromIndex) == TRUE_INT) {
+        if (JSONMemoryHandle.getInt(bytes, fromIndex) == JSONGeneral.TRUE_INT) {
             parseContext.endIndex = fromIndex + 3;
             return true;
         }
@@ -5572,12 +5552,12 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             parseContext.validateFail = true;
             return false;
         }
-        int len = Math.min(parseContext.toIndex - fromIndex + 1, 4);
+        int len = Math.min(bytes.length - fromIndex + 1, 4);
         throw new JSONException("Syntax error, at pos " + fromIndex + ", expected 'true' because it starts with 't', but found text '" + new String(bytes, fromIndex, len) + "'");
     }
 
     protected final static boolean parseFalse(byte[] bytes, final int fromIndex, JSONParseContext parseContext) {
-        if (JSONMemoryHandle.getInt(bytes, fromIndex + 1) == ALSE_INT) {
+        if (JSONMemoryHandle.getInt(bytes, fromIndex + 1) == JSONGeneral.ALSE_INT) {
             parseContext.endIndex = fromIndex + 4;
             return false;
         }
@@ -5585,7 +5565,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             parseContext.validateFail = true;
             return false;
         }
-        int len = Math.min(parseContext.toIndex - fromIndex + 1, 5);
+        int len = Math.min(bytes.length - fromIndex + 1, 5);
         throw new JSONException("Syntax error, at pos " + fromIndex + ", expected 'false' because it starts with 'f', but found text '" + new String(bytes, fromIndex, len) + "'");
     }
 
@@ -5603,13 +5583,13 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             // b is \\ or "
             if (b == '\\') {
                 if (writer == null) {
-                    writer = getContextWriter(parseContext);
+                    writer = JSONGeneral.getContextWriter(parseContext);
                 }
                 escape = true;
                 if (i > beginIndex) {
                     writer.writeBytes(bytes, beginIndex, i - beginIndex);
                 }
-                i = beginIndex = escapeNextBytes(bytes, bytes[i + 1], i, writer);
+                i = beginIndex = JSONGeneral.escapeNextBytes(bytes, bytes[i + 1], i, writer);
             } else {
                 parseContext.endIndex = i;
                 len = i - beginIndex;
@@ -5630,7 +5610,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
         JSONCharArrayWriter writer = null;
         if (!parseContext.escape) {
             int i = from;
-            long hashValue = ESCAPE_BACKSLASH;
+            long hashValue = JSONGeneral.ESCAPE_BACKSLASH;
             byte b1;
             if ((b = bytes[++i]) != endCh && (b1 = bytes[++i]) != endCh) {
                 hashValue = (hashValue << 16) | (b << 8) | b1;
@@ -5655,7 +5635,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             boolean escape = false;
             for (; ; ) {
                 // Setting to ESCAPE can solve interference
-                long hashValue = ESCAPE_BACKSLASH;
+                long hashValue = JSONGeneral.ESCAPE_BACKSLASH;
                 while ((b = bytes[i]) != '\\' && b != endCh) {
                     hashValue = hashValue << 8 | b;
                     ++i;
@@ -5663,13 +5643,13 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 // ch is \\ or "
                 if (b == '\\') {
                     if (writer == null) {
-                        writer = getContextWriter(parseContext);
+                        writer = JSONGeneral.getContextWriter(parseContext);
                     }
                     escape = true;
                     if (i > beginIndex) {
                         writer.writeBytes(bytes, beginIndex, i - beginIndex);
                     }
-                    i = beginIndex = escapeNextBytes(bytes, bytes[i + 1], i, writer);
+                    i = beginIndex = JSONGeneral.escapeNextBytes(bytes, bytes[i + 1], i, writer);
                 } else {
                     parseContext.endIndex = i;
                     len = i - beginIndex;
@@ -5689,11 +5669,11 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
 
     final static int skipWhiteSpacesOrComment(byte[] buf, int offset, final boolean allowComment, JSONParseContext parseContext) {
         if (buf[++offset] <= ' ') {
-            offset = skipWhiteSpaces(buf, offset + 1);
+            offset = JSONGeneral.skipWhiteSpaces(buf, offset + 1);
         }
         if (allowComment) {
             if (buf[offset] == '/') {
-                offset = clearCommentAndWhiteSpaces(buf, offset + 1, parseContext);
+                offset = JSONGeneral.clearCommentAndWhiteSpaces(buf, offset + 1, parseContext);
             }
         }
         return offset;
@@ -5702,23 +5682,23 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
     final static int skipWhiteSpacesOrComment(byte[] buf, int offset, int expected, final boolean allowComment, JSONParseContext parseContext) {
         int c;
         if ((c = buf[++offset]) <= ' ') {
-            offset = skipWhiteSpaces(buf, offset + 1);
+            offset = JSONGeneral.skipWhiteSpaces(buf, offset + 1);
         }
         if (allowComment) {
             if (c == '/') {
-                c = buf[offset = clearCommentAndWhiteSpaces(buf, offset + 1, parseContext)];
+                c = buf[offset = JSONGeneral.clearCommentAndWhiteSpaces(buf, offset + 1, parseContext)];
             }
         }
         if (c != expected) {
-            throwUnexpectedException(buf, offset, c, (char) expected);
+            JSONGeneral.throwUnexpectedException(buf, offset, c, (char) expected);
             return 0;
         }
         if (buf[++offset] <= ' ') {
-            offset = skipWhiteSpaces(buf, offset + 1);
+            offset = JSONGeneral.skipWhiteSpaces(buf, offset + 1);
         }
         if (allowComment) {
             if (buf[offset] == '/') {
-                offset = clearCommentAndWhiteSpaces(buf, offset + 1, parseContext);
+                offset = JSONGeneral.clearCommentAndWhiteSpaces(buf, offset + 1, parseContext);
             }
         }
         return offset;
@@ -5726,11 +5706,11 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
 
     final static int skipWhiteSpacesOrComment(char[] buf, int offset, final boolean allowComment, JSONParseContext parseContext) {
         if (buf[++offset] <= ' ') {
-            offset = skipWhiteSpaces(buf, offset + 1);
+            offset = JSONGeneral.skipWhiteSpaces(buf, offset + 1);
         }
         if (allowComment) {
             if (buf[offset] == '/') {
-                offset = clearCommentAndWhiteSpaces(buf, offset + 1, parseContext);
+                offset = JSONGeneral.clearCommentAndWhiteSpaces(buf, offset + 1, parseContext);
             }
         }
         return offset;
@@ -5747,13 +5727,13 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 try {
                     return of(value);
                 } catch (Throwable throwable) {
-                    throw new JSONException("Syntax error, at pos " + parseContext.endIndex + ", context text by '" + createErrorContextText(buf, fromIndex) + "',  " + "', expected '" + value);
+                    throw new JSONException("Syntax error, at pos " + parseContext.endIndex + ", context text by '" + JSONGeneral.createErrorContextText(buf, fromIndex) + "',  " + "', expected '" + value);
                 }
             }
             if (beginChar == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             }
-            String errorContextTextAt = createErrorContextText(buf, fromIndex);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
             throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + beginChar + "', expected '\"' ");
         }
 
@@ -5764,13 +5744,13 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
                 try {
                     return of(value);
                 } catch (Throwable throwable) {
-                    throw new JSONException("Syntax error, at pos " + parseContext.endIndex + ", context text by '" + createErrorContextText(buf, fromIndex) + "',  " + "', text '" + value + "' cannot be converted as " + parameterizedType.getActualType());
+                    throw new JSONException("Syntax error, at pos " + parseContext.endIndex + ", context text by '" + JSONGeneral.createErrorContextText(buf, fromIndex) + "',  " + "', text '" + value + "' cannot be converted as " + parameterizedType.getActualType());
                 }
             }
             if (beginByte == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             }
-            String errorContextTextAt = createErrorContextText(buf, fromIndex);
+            String errorContextTextAt = JSONGeneral.createErrorContextText(buf, fromIndex);
             throw new JSONException("Syntax error, at pos " + fromIndex + ", context text by '" + errorContextTextAt + "', unexpected '" + (char) beginByte + "', expected '\"' ");
         }
     }
@@ -5784,7 +5764,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             try {
                 return of(value);
             } catch (Throwable throwable) {
-                throw new JSONException("Syntax error, at pos " + parseContext.endIndex + ", context text by '" + createErrorContextText(buf, fromIndex) + "',  " + value + " cannot be converted as " + parameterizedType.getActualType());
+                throw new JSONException("Syntax error, at pos " + parseContext.endIndex + ", context text by '" + JSONGeneral.createErrorContextText(buf, fromIndex) + "',  " + value + " cannot be converted as " + parameterizedType.getActualType());
             }
         }
 
@@ -5793,7 +5773,7 @@ public abstract class JSONTypeDeserializer extends JSONGeneral {
             try {
                 return of(value);
             } catch (Throwable throwable) {
-                throw new JSONException("Syntax error, at pos " + parseContext.endIndex + ", context text by '" + createErrorContextText(buf, fromIndex) + "',  " + value + " cannot be converted as " + parameterizedType.getActualType());
+                throw new JSONException("Syntax error, at pos " + parseContext.endIndex + ", context text by '" + JSONGeneral.createErrorContextText(buf, fromIndex) + "',  " + value + " cannot be converted as " + parameterizedType.getActualType());
             }
         }
     }

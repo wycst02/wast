@@ -19,6 +19,8 @@ public final class JSONPojoFieldDeserializer extends JSONTypeDeserializer implem
     final int fieldIndex;
     final SetterInfo setterInfo;
     final JSONPropertyDefinition propertyDefinition;
+    final long fieldOffset;
+    final ReflectConsts.PrimitiveType primitiveType;
     /**
      * 类型信息
      */
@@ -56,7 +58,8 @@ public final class JSONPojoFieldDeserializer extends JSONTypeDeserializer implem
         this.fieldIndex = setterInfo.getIndex();
         this.propertyDefinition = propertyDefinition;
         this.genericParameterizedType = setterInfo.getGenericParameterizedType();
-
+        this.fieldOffset = setterInfo.getFieldOffset();
+        this.primitiveType = this.fieldOffset == -1L ? null : setterInfo.getPrimitiveType();
         Class<?> actualClass = genericParameterizedType.getActualType();
         this.classCategory = ReflectConsts.getClassCategory(actualClass);
 
@@ -183,7 +186,7 @@ public final class JSONPojoFieldDeserializer extends JSONTypeDeserializer implem
     }
 
     Object getDefaultFieldValue(Object instance) {
-        return JSON_SECURE_TRUSTED_ACCESS.getSetterDefault(setterInfo, instance);
+        return JSONGeneral.JSON_SECURE_TRUSTED_ACCESS.getSetterDefault(setterInfo, instance);
     }
 
     public int getIndex() {
@@ -226,92 +229,78 @@ public final class JSONPojoFieldDeserializer extends JSONTypeDeserializer implem
         return priority ? 1 : 0;
     }
 
-//    static JSONPojoFieldDeserializer createFieldDeserializer(String name, final SetterInfo setterInfo, JsonProperty jsonProperty) {
-//        final long fieldOffset = setterInfo.getFieldOffset();
-//        if (fieldOffset != -1) {
-//            ReflectConsts.PrimitiveType primitiveType = setterInfo.getPrimitiveType();
-//            if (primitiveType != null) {
-//                switch (primitiveType) {
-//                    case PrimitiveByte: {
-//                        return new JSONPojoFieldDeserializer(name, setterInfo, jsonProperty) {
-//                            @Override
-//                            public void invoke(Object entity, Object value) {
-//                                JSONUnsafe.UNSAFE.putByte(entity, fieldOffset, (Byte) value);
-//                            }
-//                        };
-//                    }
-//                    case PrimitiveShort: {
-//                        return new JSONPojoFieldDeserializer(name, setterInfo, jsonProperty) {
-//                            @Override
-//                            public void invoke(Object entity, Object value) {
-//                                JSONUnsafe.UNSAFE.putShort(entity, fieldOffset, (Short) value);
-//                            }
-//                        };
-//                    }
-//                    case PrimitiveInt: {
-//                        return new JSONPojoFieldDeserializer(name, setterInfo, jsonProperty) {
-//                            @Override
-//                            public void invoke(Object entity, Object value) {
-//                                JSONUnsafe.UNSAFE.putInt(entity, fieldOffset, (Integer) value);
-//                            }
-//                        };
-//                    }
-//                    case PrimitiveFloat: {
-//                        return new JSONPojoFieldDeserializer(name, setterInfo, jsonProperty) {
-//                            @Override
-//                            public void invoke(Object entity, Object value) {
-//                                JSONUnsafe.UNSAFE.putFloat(entity, fieldOffset, (Float) value);
-//                            }
-//                        };
-//                    }
-//                    case PrimitiveLong: {
-//                        return new JSONPojoFieldDeserializer(name, setterInfo, jsonProperty) {
-//                            @Override
-//                            public void invoke(Object entity, Object value) {
-//                                JSONUnsafe.UNSAFE.putLong(entity, fieldOffset, (Long) value);
-//                            }
-//                        };
-//                    }
-//                    case PrimitiveDouble: {
-//                        return new JSONPojoFieldDeserializer(name, setterInfo, jsonProperty) {
-//                            @Override
-//                            public void invoke(Object entity, Object value) {
-//                                JSONUnsafe.UNSAFE.putDouble(entity, fieldOffset, (Double) value);
-//                            }
-//                        };
-//                    }
-//                    case PrimitiveBoolean: {
-//                        return new JSONPojoFieldDeserializer(name, setterInfo, jsonProperty) {
-//                            @Override
-//                            public void invoke(Object entity, Object value) {
-//                                JSONUnsafe.UNSAFE.putBoolean(entity, fieldOffset, (Boolean) value);
-//                            }
-//                        };
-//                    }
-//                    default: {
-//                        return new JSONPojoFieldDeserializer(name, setterInfo, jsonProperty) {
-//                            @Override
-//                            public void invoke(Object entity, Object value) {
-//                                JSONUnsafe.UNSAFE.putChar(entity, fieldOffset, (Character) value);
-//                            }
-//                        };
-//                    }
-//                }
-//            } else {
-//                return new JSONPojoFieldDeserializer(name, setterInfo, jsonProperty) {
-//                    @Override
-//                    public void invoke(Object entity, Object value) {
-//                        JSONUnsafe.UNSAFE.putObject(entity, fieldOffset, value);
-//                    }
-//                };
-//            }
-//        } else {
-//            return new JSONPojoFieldDeserializer(name, setterInfo, jsonProperty) {
-//                @Override
-//                public void invoke(Object entity, Object value) {
-//                    JSON_SECURE_TRUSTED_ACCESS.set(setterInfo, entity, value);
-//                }
-//            };
-//        }
-//    }
+    void deserializeAndSet(CharSource charSource, byte[] buf, int offset, Object entity, JSONParseContext parseContext) throws Exception {
+        if (primitiveType != null) {
+            switch (primitiveType) {
+                case PrimitiveInt: {
+                    int value = (Integer) deserializer.deserialize(charSource, buf, offset, genericParameterizedType, null, JSONGeneral.END_OBJECT, parseContext);
+                    JSONEndianUnsafe.UNSAFE.putInt(entity, fieldOffset, value);
+                    return;
+                }
+                case PrimitiveLong: {
+                    long value = (Long) deserializer.deserialize(charSource, buf, offset, genericParameterizedType, null, JSONGeneral.END_OBJECT, parseContext);
+                    JSONEndianUnsafe.UNSAFE.putLong(entity, fieldOffset, value);
+                    return;
+                }
+                case PrimitiveDouble: {
+                    double value = JSONGeneral.parseFloats(buf, offset, buf.length, parseContext, true);
+                    JSONEndianUnsafe.UNSAFE.putDouble(entity, fieldOffset, value);
+                    return;
+                }
+                case PrimitiveFloat: {
+                    float value = (float) JSONGeneral.parseFloats(buf, offset, buf.length, parseContext, false);
+                    JSONEndianUnsafe.UNSAFE.putFloat(entity, fieldOffset, value);
+                    return;
+                }
+            }
+        }
+        // default
+        Object value = deserializer.deserialize(charSource, buf, offset, genericParameterizedType, null, JSONGeneral.END_OBJECT, parseContext);
+        JSONGeneral.JSON_SECURE_TRUSTED_ACCESS.set(setterInfo, entity, value);
+    }
+
+    static JSONPojoFieldDeserializer createFieldDeserializer(JSONStore store, String name, SetterInfo setterInfo, JSONPropertyDefinition propertyDefinition) {
+        /*
+        final long fieldOffset = setterInfo.getFieldOffset();
+        final ReflectConsts.PrimitiveType primitiveType = setterInfo.getPrimitiveType();
+        if (primitiveType != null) {
+            // jdk9+ has optimization effects
+            switch (primitiveType) {
+                case PrimitiveInt: {
+                    return new JSONPojoFieldDeserializer(store, name, setterInfo, propertyDefinition) {
+                        protected void deserialize(CharSource charSource, byte[] buf, int offset, Object entity, JSONParseContext parseContext) throws Exception {
+                            int value = (Integer) deserializer.deserialize(charSource, buf, offset, genericParameterizedType, null, JSONGeneral.END_OBJECT, parseContext);
+                            JSONEndianUnsafe.UNSAFE.putInt(entity, fieldOffset, value);
+                        }
+                    };
+                }
+                case PrimitiveLong: {
+                    return new JSONPojoFieldDeserializer(store, name, setterInfo, propertyDefinition) {
+                        protected void deserialize(CharSource charSource, byte[] buf, int offset, Object entity, JSONParseContext parseContext) throws Exception {
+                            long value = (Long) deserializer.deserialize(charSource, buf, offset, genericParameterizedType, null, JSONGeneral.END_OBJECT, parseContext);
+                            JSONEndianUnsafe.UNSAFE.putLong(entity, fieldOffset, value);
+                        }
+                    };
+                }
+                case PrimitiveDouble: {
+                    return new JSONPojoFieldDeserializer(store, name, setterInfo, propertyDefinition) {
+                        protected void deserialize(CharSource charSource, byte[] buf, int offset, Object entity, JSONParseContext parseContext) throws Exception {
+                            double value = JSONGeneral.parseFloats(buf, offset, buf.length, parseContext, true);
+                            JSONEndianUnsafe.UNSAFE.putDouble(entity, fieldOffset, value);
+                        }
+                    };
+                }
+                case PrimitiveFloat: {
+                    return new JSONPojoFieldDeserializer(store, name, setterInfo, propertyDefinition) {
+                        protected void deserialize(CharSource charSource, byte[] buf, int offset, Object entity, JSONParseContext parseContext) throws Exception {
+                            float value = (float) JSONGeneral.parseFloats(buf, offset, buf.length, parseContext, false);
+                            JSONEndianUnsafe.UNSAFE.putFloat(entity, fieldOffset, value);
+                        }
+                    };
+                }
+            }
+        }
+        */
+        return new JSONPojoFieldDeserializer(store, name, setterInfo, propertyDefinition);
+    }
 }

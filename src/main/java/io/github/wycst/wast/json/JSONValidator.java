@@ -14,20 +14,20 @@ import java.util.Arrays;
  * @Date: 2022/6/3 20:01
  * @Description:
  */
-final class JSONValidator extends JSONGeneral {
+final class JSONValidator {
 
     static boolean validate(String json, ReadOption[] readOptions) {
         if (EnvUtils.JDK_9_PLUS) {
             byte[] bytes = (byte[]) JSONMemoryHandle.getStringValue(json);
             if (bytes.length == json.length()) {
-                return validate(AsciiStringSource.of(json), bytes, readOptions);
+                return validate(CharSource.ASCII, bytes, JSONParseContext.of(readOptions, json));
             } else {
                 char[] chars = json.toCharArray();
-                return validate(UTF16ByteArraySource.of(json), chars, readOptions);
+                return validate(CharSource.UTF16, chars, JSONParseContext.of(readOptions, json));
             }
         }
         char[] chars = (char[]) JSONMemoryHandle.getStringValue(json);
-        return validate(null, chars, readOptions);
+        return validate(null, chars, JSONParseContext.of(readOptions));
     }
 
     static boolean validate(char[] buf, ReadOption[] readOptions) {
@@ -35,22 +35,22 @@ final class JSONValidator extends JSONGeneral {
             String json = new String(buf);
             byte[] bytes = (byte[]) JSONMemoryHandle.getStringValue(json);
             if (bytes.length == json.length()) {
-                return validate(AsciiStringSource.of(json), bytes, readOptions);
+                return validate(CharSource.ASCII, bytes, JSONParseContext.of(readOptions, json));
             } else {
-                return validate(UTF16ByteArraySource.of(json), buf, readOptions);
+                return validate(CharSource.UTF16, buf, JSONParseContext.of(readOptions, json));
             }
         }
-        return validate(null, buf, readOptions);
+        return validate(null, buf, JSONParseContext.of(readOptions));
     }
 
     public static boolean validate(byte[] buf, ReadOption[] readOptions) {
         if (EnvUtils.JDK_9_PLUS) {
-            return validate(AsciiStringSource.of(JSONMemoryHandle.createAsciiString(buf)), buf, readOptions);
+            return validate(CharSource.ASCII, buf, JSONParseContext.of(readOptions, JSONMemoryHandle.createAsciiString(buf)));
         }
-        return validate(null, buf, readOptions);
+        return validate(null, buf, JSONParseContext.of(readOptions));
     }
 
-    static boolean validate(CharSource source, char[] chars, ReadOption... readOptions) {
+    static boolean validate(CharSource source, char[] chars, JSONParseContext parseContext) {
         int fromIndex = 0, toIndex = chars.length;
         char beginChar = '\0';
         while ((fromIndex < toIndex) && (beginChar = chars[fromIndex]) <= ' ') {
@@ -59,13 +59,11 @@ final class JSONValidator extends JSONGeneral {
         while ((toIndex > fromIndex) && chars[toIndex - 1] <= ' ') {
             toIndex--;
         }
-        JSONParseContext parseContext = new JSONParseContext();
-        JSONOptions.readOptions(readOptions, parseContext);
         parseContext.validate = true;
         try {
-            final boolean allowComment = parseContext.allowComment;
+            final boolean allowComment = parseContext.optionConfig.allowComment;
             if (allowComment && beginChar == '/') {
-                fromIndex = clearCommentAndWhiteSpaces(chars, fromIndex + 1, parseContext);
+                fromIndex = JSONGeneral.clearCommentAndWhiteSpaces(chars, fromIndex + 1, parseContext);
                 beginChar = chars[fromIndex];
             }
             boolean validate = true;
@@ -98,7 +96,7 @@ final class JSONValidator extends JSONGeneral {
                             default: {
                                 char[] numBuf = Arrays.copyOfRange(chars, fromIndex, toIndex + 1);
                                 numBuf[numBuf.length - 1] = ',';
-                                JSONTypeDeserializer.NUMBER_SKIPPER.deserialize(source, numBuf, 0, parseContext.useBigDecimalAsDefault ? GenericParameterizedType.BigDecimalType : GenericParameterizedType.AnyType, null, ',', parseContext);
+                                JSONTypeDeserializer.NUMBER_SKIPPER.deserialize(source, numBuf, 0, parseContext.optionConfig.useBigDecimalAsDefault ? GenericParameterizedType.BigDecimalType : GenericParameterizedType.AnyType, null, ',', parseContext);
                                 toIndex = numBuf.length - 1;
                             }
                         }
@@ -116,9 +114,9 @@ final class JSONValidator extends JSONGeneral {
             if (allowComment) {
                 if (endIndex < toIndex - 1) {
                     char commentStart = '\0';
-                    while (endIndex + 1 < toIndex && (commentStart = (char) chars[++endIndex]) <= ' ') ;
+                    while (endIndex + 1 < toIndex && (commentStart = chars[++endIndex]) <= ' ') ;
                     if (commentStart == '/') {
-                        endIndex = clearCommentAndWhiteSpaces(chars, endIndex + 1, parseContext);
+                        endIndex = JSONGeneral.clearCommentAndWhiteSpaces(chars, endIndex + 1, parseContext);
                     }
                 }
             }
@@ -130,7 +128,7 @@ final class JSONValidator extends JSONGeneral {
         }
     }
 
-    static boolean validate(CharSource source, byte[] bytes, ReadOption... readOptions) {
+    static boolean validate(CharSource source, byte[] bytes, JSONParseContext parseContext) {
         int fromIndex = 0, toIndex = bytes.length;
         byte beginByte = '\0';
         while ((fromIndex < toIndex) && (beginByte = bytes[fromIndex]) <= ' ') {
@@ -139,13 +137,11 @@ final class JSONValidator extends JSONGeneral {
         while ((toIndex > fromIndex) && bytes[toIndex - 1] <= ' ') {
             toIndex--;
         }
-        JSONParseContext parseContext = new JSONParseContext();
-        JSONOptions.readOptions(readOptions, parseContext);
         parseContext.validate = true;
         try {
-            boolean allowComment = parseContext.allowComment;
+            boolean allowComment = parseContext.optionConfig.allowComment;
             if (allowComment && beginByte == '/') {
-                fromIndex = clearCommentAndWhiteSpaces(bytes, fromIndex + 1, parseContext);
+                fromIndex = JSONGeneral.clearCommentAndWhiteSpaces(bytes, fromIndex + 1, parseContext);
                 beginByte = bytes[fromIndex];
             }
             boolean validate = true;
@@ -178,7 +174,7 @@ final class JSONValidator extends JSONGeneral {
                             default: {
                                 byte[] numBuf = Arrays.copyOfRange(bytes, fromIndex, toIndex + 1);
                                 numBuf[numBuf.length - 1] = ',';
-                                JSONTypeDeserializer.NUMBER_SKIPPER.deserialize(source, numBuf, 0, parseContext.useBigDecimalAsDefault ? GenericParameterizedType.BigDecimalType : GenericParameterizedType.AnyType, null, (byte) ',', parseContext);
+                                JSONTypeDeserializer.NUMBER_SKIPPER.deserialize(source, numBuf, 0, parseContext.optionConfig.useBigDecimalAsDefault ? GenericParameterizedType.BigDecimalType : GenericParameterizedType.AnyType, null, (byte) ',', parseContext);
                                 toIndex = numBuf.length - 1;
                             }
                         }
@@ -198,7 +194,7 @@ final class JSONValidator extends JSONGeneral {
                     char commentStart = '\0';
                     while (endIndex + 1 < toIndex && (commentStart = (char) bytes[++endIndex]) <= ' ') ;
                     if (commentStart == '/') {
-                        endIndex = clearCommentAndWhiteSpaces(bytes, endIndex + 1, parseContext);
+                        endIndex = JSONGeneral.clearCommentAndWhiteSpaces(bytes, endIndex + 1, parseContext);
                     }
                 }
             }

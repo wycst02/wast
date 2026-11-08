@@ -26,7 +26,6 @@ import java.util.UUID;
 class JSONByteArrayWriter extends JSONWriter {
 
     private final Charset charset;
-    private final boolean utf8;
     // buff
     byte[] buf;
 
@@ -51,7 +50,6 @@ class JSONByteArrayWriter extends JSONWriter {
 
     JSONByteArrayWriter(Charset charset) {
         this.charset = charset == null ? Charset.defaultCharset() : charset;
-        utf8 = charset == EnvUtils.CHARSET_UTF_8;
         // use pool
         BufCache bufCache = getByteBufCache(); // getOrReturnCache(null);
         if (bufCache != null) {
@@ -120,7 +118,7 @@ class JSONByteArrayWriter extends JSONWriter {
             if (ch < 0x80) {
                 buf[count++] = (byte) ch;
             } else {
-                if (utf8) {
+                if (charset == EnvUtils.CHARSET_UTF_8) {
                     if (ch <= 0x7FF) {
                         // 2字节
                         buf[count++] = (byte) (ch >> 6 | 0xC0);
@@ -183,7 +181,7 @@ class JSONByteArrayWriter extends JSONWriter {
                     if (c < 0x80) {
                         buf[count++] = (byte) c;
                     } else {
-                        if (utf8) {
+                        if (charset == EnvUtils.CHARSET_UTF_8) {
                             if (c <= 0x7FF) {
                                 // 2字节
                                 buf[count++] = (byte) (c >> 6 | 0xC0);
@@ -316,7 +314,7 @@ class JSONByteArrayWriter extends JSONWriter {
                 if (ch < 0x80) {
                     buf[count++] = (byte) ch;
                 } else {
-                    if (utf8) {
+                    if (charset == EnvUtils.CHARSET_UTF_8) {
                         if (ch <= 0x7FF) {
                             // 2字节
                             buf[count++] = (byte) (ch >> 6 | 0xC0);
@@ -553,7 +551,7 @@ class JSONByteArrayWriter extends JSONWriter {
                 if (c < 0x80) {
                     buf[count++] = (byte) c;
                 } else {
-                    if (utf8) {
+                    if (charset == EnvUtils.CHARSET_UTF_8) {
                         if (c <= 0x7FF) {
                             // 2字节
                             buf[count++] = (byte) (c >> 6 | 0xC0);
@@ -583,6 +581,19 @@ class JSONByteArrayWriter extends JSONWriter {
             }
         }
         buf[count++] = '"';
+        this.count = count;
+    }
+
+    @Override
+    public void writeBoolean(boolean value) throws IOException {
+        ensureCapacity(5 + SECURITY_UNCHECK_SPACE);
+        int count = this.count;
+        if(value) {
+            count += JSONMemoryHandle.putInt(buf, count, JSONGeneral.TRUE_INT);
+        } else {
+            buf[count++] = 'f';
+            count += JSONMemoryHandle.putInt(buf, count, JSONGeneral.ALSE_INT);
+        }
         this.count = count;
     }
 

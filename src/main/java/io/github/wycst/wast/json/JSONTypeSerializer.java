@@ -20,10 +20,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * @Description:
  */
 @SuppressWarnings({"all"})
-public abstract class JSONTypeSerializer extends JSONGeneral {
+public abstract class JSONTypeSerializer {
 
     final static Map<Class<?>, JSONTypeSerializer> GLOBAL_SERIALIZERS = new HashMap<Class<?>, JSONTypeSerializer>(32);
-    static final JSONTypeSerializer SIMPLE = new SimpleImpl();
+    // static final JSONTypeSerializer SIMPLE = new SimpleImpl();
+    static final JSONTypeSerializer BOOLEAN = new BooleamImpl();
     static final JSONTypeSerializer DATE = new DateImpl();
     static final JSONTypeSerializer CLASS = new ClassImpl();
     static final CharSequenceImpl CHAR_SEQUENCE = new CharSequenceImpl();
@@ -35,15 +36,15 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
     static final SimpleNumberImpl NUMBER = new SimpleNumberImpl();
     static final BigIntegerImpl NUMBER_BIG_INTEGER = new BigIntegerImpl();
     static final SimpleNumberImpl NUMBER_LONG = new LongImpl();
-    static final SimpleImpl NUMBER_INTEGER = new IntegerImpl();
-    static final SimpleImpl NUMBER_DOUBLE = new DoubleImpl();
-    static final SimpleImpl NUMBER_FLOAT = new FloatImpl();
+    static final SimpleNumberImpl NUMBER_INTEGER = new IntegerImpl();
+    static final SimpleNumberImpl NUMBER_DOUBLE = new DoubleImpl();
+    static final SimpleNumberImpl NUMBER_FLOAT = new FloatImpl();
     static final ArrayImpl ARRAY_STRING = new ArrayStringImpl();
     static final ArrayImpl ARRAY_PRIMITIVE_DOUBLE = new ArrayPrimitiveImpl(NUMBER_DOUBLE, ReflectConsts.PrimitiveType.PrimitiveDouble);
     static final ArrayImpl ARRAY_PRIMITIVE_BYTE = new ArrayPrimitiveImpl(NUMBER_INTEGER, ReflectConsts.PrimitiveType.PrimitiveByte);
     static final ArrayImpl ARRAY_PRIMITIVE_SHORT = new ArrayPrimitiveImpl(NUMBER_INTEGER, ReflectConsts.PrimitiveType.PrimitiveShort);
     static final ArrayImpl ARRAY_PRIMITIVE_FLOAT = new ArrayPrimitiveImpl(NUMBER_FLOAT, ReflectConsts.PrimitiveType.PrimitiveFloat);
-    static final ArrayImpl ARRAY_PRIMITIVE_BOOLEAN = new ArrayPrimitiveImpl(SIMPLE, ReflectConsts.PrimitiveType.PrimitiveBoolean);
+    static final ArrayImpl ARRAY_PRIMITIVE_BOOLEAN = new ArrayPrimitiveImpl(BOOLEAN, ReflectConsts.PrimitiveType.PrimitiveBoolean);
     static final ArrayImpl ARRAY_PRIMITIVE_INTEGER = new ArrayPrimitiveIntImpl();
     static final ArrayImpl ARRAY_PRIMITIVE_LONG = new ArrayPrimitiveLongImpl();
     static final JSONTypeSerializer DATE_AS_TIME_SERIALIZER = new DateAsTimeImpl();
@@ -55,6 +56,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
     };
 
     static {
+        putTypeSerializer(GLOBAL_SERIALIZERS, BOOLEAN, boolean.class, Boolean.class);
         putTypeSerializer(GLOBAL_SERIALIZERS, CHAR_SEQUENCE_STRING, String.class);
         putTypeSerializer(GLOBAL_SERIALIZERS, NUMBER_BIG_INTEGER, BigInteger.class);
         putTypeSerializer(GLOBAL_SERIALIZERS, NUMBER_DOUBLE, double.class, Double.class);
@@ -97,8 +99,8 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
     }
 
     void writeType(JSONWriter writer, Class clazz, boolean formatOut, int indentLevel, JSONConfig jsonConfig) throws IOException {
-        writeFormatOutSymbols(writer, indentLevel + 1, formatOut, jsonConfig);
-        if (formatOut && jsonConfig.formatOutColonSpace) {
+        JSONGeneral.writeFormatOutSymbols(writer, indentLevel + 1, formatOut, jsonConfig);
+        if (formatOut && jsonConfig.optionConfig.formatOutColonSpace) {
             writer.write("\"@c\": \"");
         } else {
             writer.write("\"@c\":\"");
@@ -144,13 +146,19 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
     }
 
     // 1、number和bool序列化
-    static class SimpleImpl extends JSONTypeSerializer {
+//    static class SimpleImpl extends JSONTypeSerializer {
+//        protected void serialize(Object value, JSONWriter writer, JSONConfig jsonConfig, int indent) throws Exception {
+//            writer.write(value.toString());
+//        }
+//    }
+
+    static class BooleamImpl extends JSONTypeSerializer {
         protected void serialize(Object value, JSONWriter writer, JSONConfig jsonConfig, int indent) throws Exception {
-            writer.write(value.toString());
+            writer.writeBoolean((Boolean) value);
         }
     }
 
-    static class SimpleNumberImpl extends SimpleImpl {
+    static class SimpleNumberImpl extends JSONTypeSerializer {
 
         protected void serializeNumber(Object value, JSONWriter writer, JSONConfig jsonConfig, int indent) throws Exception {
             writer.writeLatinString(value.toString());
@@ -185,7 +193,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
 
 
     // integer/byte/short
-    final static class IntegerImpl extends SimpleImpl {
+    final static class IntegerImpl extends SimpleNumberImpl {
 
         protected void serialize(Object value, JSONWriter writer, JSONConfig jsonConfig, int indent) throws Exception {
             int numValue = ((Number) value).intValue();
@@ -193,7 +201,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
         }
     }
 
-    final static class DoubleImpl extends SimpleImpl {
+    final static class DoubleImpl extends SimpleNumberImpl {
 
         protected void serialize(Object value, JSONWriter writer, JSONConfig jsonConfig, int indent) throws Exception {
             double numValue = (Double) value;
@@ -201,7 +209,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
         }
     }
 
-    final static class FloatImpl extends SimpleImpl {
+    final static class FloatImpl extends SimpleNumberImpl {
         protected void serialize(Object value, JSONWriter writer, JSONConfig jsonConfig, int indent) throws Exception {
             float numValue = (Float) value;
             writer.writeFloat(numValue);
@@ -410,7 +418,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                 JSONTypeSerializer valueSerializer = getComponentTypeSerializer(componentType);
 
                 Object value = objects[0];
-                writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
                 if (value != null) {
                     serializeComponent(valueSerializer, value, componentType, writer, jsonConfig, indentLevelPlus);
                 } else {
@@ -418,7 +426,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                 }
                 for (int i = 1; i < length; ++i) {
                     writer.writeJSONToken(',');
-                    writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
+                    JSONGeneral.writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
                     value = objects[i];
                     if (value != null) {
                         serializeComponent(valueSerializer, value, componentType, writer, jsonConfig, indentLevelPlus);
@@ -426,7 +434,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                         writer.writeNull();
                     }
                 }
-                writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
+                JSONGeneral.writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
                 writer.write(']');
             } else {
                 writer.writeEmptyArray();
@@ -444,16 +452,16 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
 
         @Override
         protected void serialize(Object obj, JSONWriter writer, JSONConfig jsonConfig, int indent) throws Exception {
-            int hashcode = -1;
             if (jsonConfig.isSkipCircularReference()) {
-                if (jsonConfig.getStatus(hashcode = System.identityHashCode(obj)) == 0) {
+                if (writer.enterCircular(obj)) {
                     writer.writeNull();
                     return;
                 }
-                jsonConfig.setStatus(hashcode, 0);
             }
             writeArray(obj, writer, jsonConfig, indent);
-            jsonConfig.setStatus(hashcode, -1);
+            if (jsonConfig.isSkipCircularReference()) {
+                writer.exitCircular(obj);
+            }
         }
     }
 
@@ -484,14 +492,14 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                 // 数组类
                 writer.writeJSONToken('[');
                 int indentLevelPlus = indentLevel + 1;
-                writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
                 writer.writeLong(longs[0], jsonConfig);
                 for (int i = 1; i < length; ++i) {
                     writer.writeJSONToken(',');
-                    writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
+                    JSONGeneral.writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
                     writer.writeLong(longs[i], jsonConfig);
                 }
-                writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
+                JSONGeneral.writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
                 writer.writeJSONToken(']');
             } else {
                 writer.writeEmptyArray();
@@ -509,14 +517,14 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                 // 数组类
                 writer.writeJSONToken('[');
                 int indentLevelPlus = indentLevel + 1;
-                writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
                 writer.writeInt(ints[0]);
                 for (int i = 1; i < length; ++i) {
                     writer.writeJSONToken(',');
-                    writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
+                    JSONGeneral.writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
                     writer.writeInt(ints[i]);
                 }
-                writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
+                JSONGeneral.writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
                 writer.writeJSONToken(']');
             } else {
                 writer.writeEmptyArray();
@@ -546,14 +554,14 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                 // 数组类
                 writer.writeJSONToken('[');
                 int indentLevelPlus = indentLevel + 1;
-                writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
                 valueSerializer.serialize(primitiveType.elementAt(obj, 0), writer, jsonConfig, indentLevelPlus);
                 for (int i = 1; i < length; ++i) {
                     writer.writeJSONToken(',');
-                    writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
+                    JSONGeneral.writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
                     valueSerializer.serialize(primitiveType.elementAt(obj, i), writer, jsonConfig, indentLevelPlus);
                 }
-                writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
+                JSONGeneral.writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
                 writer.writeJSONToken(']');
             } else {
                 writer.writeEmptyArray();
@@ -584,7 +592,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                     } else {
                         writer.writeJSONToken(',');
                     }
-                    writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
+                    JSONGeneral.writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
                     if (value != null) {
                         // 此处防止重复查找序列化器小处理一下
                         Class<?> valueClass = value.getClass();
@@ -604,7 +612,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                     }
                 }
                 if (!isEmptyFlag) {
-                    writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
+                    JSONGeneral.writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
                 }
                 writer.write(']');
             } else {
@@ -613,16 +621,16 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
         }
 
         protected void serialize(Object obj, JSONWriter writer, JSONConfig jsonConfig, int indent) throws Exception {
-            int hashcode = -1;
             if (jsonConfig.isSkipCircularReference()) {
-                if (jsonConfig.getStatus(hashcode = System.identityHashCode(obj)) == 0) {
+                if (writer.enterCircular(obj)) {
                     writer.writeNull();
                     return;
                 }
-                jsonConfig.setStatus(hashcode, 0);
             }
             writeCollection(obj, writer, jsonConfig, indent);
-            jsonConfig.setStatus(hashcode, -1);
+            if (jsonConfig.isSkipCircularReference()) {
+                writer.exitCircular(obj);
+            }
         }
 
         final static class CollectionFinalTypeImpl extends CollectionImpl {
@@ -647,7 +655,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                         } else {
                             writer.writeJSONToken(',');
                         }
-                        writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
+                        JSONGeneral.writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
                         if (value != null) {
                             valueSerializer.serialize(value, writer, jsonConfig, indentLevelPlus);
                         } else {
@@ -655,7 +663,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                         }
                     }
                     if (!isEmptyFlag) {
-                        writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
+                        JSONGeneral.writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
                     }
                     writer.write(']');
                 } else {
@@ -677,7 +685,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
             boolean formatOutColonSpace = formatOut && jsonConfig.isFormatOutColonSpace();
             Map<Object, Object> map = (Map<Object, Object>) obj;
             if (map.isEmpty()) {
-                writer.write(EMPTY_OBJECT);
+                writer.write(JSONGeneral.EMPTY_OBJECT);
             } else {
                 writer.writeJSONToken('{');
                 Set<Map.Entry<Object, Object>> entrySet = map.entrySet();
@@ -691,7 +699,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                     } else {
                         writer.writeJSONToken(',');
                     }
-                    writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
+                    JSONGeneral.writeFormatOutSymbols(writer, indentLevelPlus, formatOut, jsonConfig);
                     if (jsonConfig.isAllowUnquotedMapKey() && (key == null || key instanceof Number)) {
                         writer.append(String.valueOf(key)).write(':');
                     } else {
@@ -711,22 +719,22 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                         writer.writeNull();
                     }
                 }
-                writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
+                JSONGeneral.writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
                 writer.write('}');
             }
         }
 
         protected void serialize(Object obj, JSONWriter writer, JSONConfig jsonConfig, int indent) throws Exception {
-            int hashcode = -1;
             if (jsonConfig.isSkipCircularReference()) {
-                if (jsonConfig.getStatus(hashcode = System.identityHashCode(obj)) == 0) {
+                if (writer.enterCircular(obj)) {
                     writer.writeNull();
                     return;
                 }
-                jsonConfig.setStatus(hashcode, 0);
             }
             writeMap(obj, writer, jsonConfig, indent);
-            jsonConfig.setStatus(hashcode, -1);
+            if (jsonConfig.isSkipCircularReference()) {
+                writer.exitCircular(obj);
+            }
         }
     }
 
@@ -738,13 +746,11 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
         }
 
         protected void serialize(Object obj, JSONWriter writer, JSONConfig jsonConfig, int indentLevel) throws Exception {
-            int hashcode = -1;
             if (jsonConfig.isSkipCircularReference()) {
-                if (jsonConfig.getStatus(hashcode = System.identityHashCode(obj)) == 0) {
+                if (writer.enterCircular(obj)) {
                     writer.writeNull();
                     return;
                 }
-                jsonConfig.setStatus(hashcode, 0);
             }
 
             boolean writeFullProperty = jsonConfig.isFullProperty();
@@ -767,7 +773,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                 if (!getterInfo.existField() && skipGetterOfNoExistField) {
                     continue;
                 }
-                Object value = JSON_SECURE_TRUSTED_ACCESS.get(getterInfo, obj); // getterInfo.invoke(obj);
+                Object value = JSONGeneral.JSON_SECURE_TRUSTED_ACCESS.get(getterInfo, obj); // getterInfo.invoke(obj);
                 if (value == null && !writeFullProperty)
                     continue;
                 if (isEmptyFlag) {
@@ -775,7 +781,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                 } else {
                     writer.writeJSONToken(',');
                 }
-                writeFormatOutSymbols(writer, indentPlus, formatOut, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(writer, indentPlus, formatOut, jsonConfig);
                 if (value != null) {
                     if (unCamelCaseToUnderline) {
                         fieldSerializer.writeFieldNameAndColonTo(writer);
@@ -810,10 +816,12 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
                 }
             }
             if (!isEmptyFlag) {
-                writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
+                JSONGeneral.writeEndFormatOutSymbols(writer, indentLevel, formatOut, jsonConfig);
             }
             writer.write('}');
-            jsonConfig.setStatus(hashcode, -1);
+            if (jsonConfig.isSkipCircularReference()) {
+                writer.exitCircular(obj);
+            }
         }
 
         JSONPojoStructure getPojoStructure(Class<?> clazz) {
@@ -876,7 +884,7 @@ public abstract class JSONTypeSerializer extends JSONGeneral {
         protected void serialize(Object value, JSONWriter writer, JSONConfig jsonConfig, int indent) throws Exception {
             Class<?> clazz = value.getClass();
             if (clazz == Object.class) {
-                writer.write(EMPTY_OBJECT);
+                writer.write(JSONGeneral.EMPTY_OBJECT);
             } else {
                 JSONTypeSerializer typeSerializer = store.getTypeSerializer(clazz);
                 if (typeSerializer != this) {

@@ -19,7 +19,6 @@ import java.util.TimeZone;
  */
 @SuppressWarnings({"all"})
 public abstract class JSONTemporalSerializer extends JSONTypeSerializer {
-
     protected final Class<?> temporalClass;
     protected DateFormatter dateFormatter;
     protected final boolean useFormatter;

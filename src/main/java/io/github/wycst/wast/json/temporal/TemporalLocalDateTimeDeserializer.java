@@ -3,6 +3,7 @@ package io.github.wycst.wast.json.temporal;
 import io.github.wycst.wast.common.beans.GeneralDate;
 import io.github.wycst.wast.common.beans.GregorianDate;
 import io.github.wycst.wast.common.reflect.GenericParameterizedType;
+import io.github.wycst.wast.json.JSONGeneral;
 import io.github.wycst.wast.json.JSONParseContext;
 import io.github.wycst.wast.json.JSONTemporalDeserializer;
 import io.github.wycst.wast.json.exceptions.JSONException;
@@ -29,13 +30,13 @@ public class TemporalLocalDateTimeDeserializer extends JSONTemporalDeserializer 
 
     protected Object deserializeTemporal(char[] buf, int fromIndex, int endIndex, JSONParseContext jsonParseContext) throws Exception {
         // use dateTemplate && pattern
-        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, ZERO_TIME_ZONE);
+        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, JSONGeneral.ZERO_TIME_ZONE);
         return LocalDateTime.of(generalDate.getYear(), generalDate.getMonth(), generalDate.getDay(), generalDate.getHourOfDay(), generalDate.getMinute(), generalDate.getSecond(), generalDate.getMillisecond() * 1000000);
     }
 
     protected Object deserializeTemporal(byte[] buf, int fromIndex, int endIndex, JSONParseContext jsonParseContext) throws Exception {
         // use dateTemplate && pattern
-        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, ZERO_TIME_ZONE);
+        GeneralDate generalDate = dateTemplate.parseGeneralDate(buf, fromIndex + 1, endIndex - fromIndex - 1, JSONGeneral.ZERO_TIME_ZONE);
         return LocalDateTime.of(generalDate.getYear(), generalDate.getMonth(), generalDate.getDay(), generalDate.getHourOfDay(), generalDate.getMinute(), generalDate.getSecond(), generalDate.getMillisecond() * 1000000);
     }
 
@@ -48,7 +49,7 @@ public class TemporalLocalDateTimeDeserializer extends JSONTemporalDeserializer 
         if (c == endToken) {
             return localDateTime;
         }
-        String errorContextTextAt = createErrorContextText(buf, i);
+        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected token '" + c + "', expected '" + endToken + "'");
     }
 
@@ -61,7 +62,7 @@ public class TemporalLocalDateTimeDeserializer extends JSONTemporalDeserializer 
         if (c == endToken) {
             return localDateTime;
         }
-        String errorContextTextAt = createErrorContextText(buf, i);
+        String errorContextTextAt = JSONGeneral.createErrorContextText(buf, i);
         throw new JSONException("Syntax error, at pos " + i + ", context text by '" + errorContextTextAt + "', unexpected token '" + (char) c + "', expected '" + (char) endToken + "'");
     }
 

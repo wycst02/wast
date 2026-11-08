@@ -3,6 +3,7 @@ package io.github.wycst.wast.json;
 import io.github.wycst.wast.common.compiler.JavaSourceObject;
 import io.github.wycst.wast.common.reflect.GetterInfo;
 import io.github.wycst.wast.common.reflect.ReflectConsts;
+import io.github.wycst.wast.common.reflect.UnsafeHelper;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -46,7 +47,7 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
             if (!getterInfo.existField() && skipGetterOfNoExistField) {
                 continue;
             }
-            Object value = JSON_SECURE_TRUSTED_ACCESS.get(getterInfo, entity); // getterInfo.invoke(entity);
+            Object value = JSONGeneral.JSON_SECURE_TRUSTED_ACCESS.get(getterInfo, entity); // getterInfo.invoke(entity);
             if (value == null && !writeFullProperty)
                 continue;
             if (isEmptyFlag) {
@@ -86,7 +87,7 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
             if (!getterInfo.existField() && skipGetterOfNoExistField) {
                 continue;
             }
-            Object value = JSON_SECURE_TRUSTED_ACCESS.get(getterInfo, entity); // getterInfo.invoke(entity);
+            Object value = JSONGeneral.JSON_SECURE_TRUSTED_ACCESS.get(getterInfo, entity); // getterInfo.invoke(entity);
             if (value == null && !writeFullProperty)
                 continue;
             if (isEmptyFlag) {
@@ -94,7 +95,7 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
             } else {
                 writer.writeJSONToken(',');
             }
-            writeFormatOutSymbols(writer, indentPlus, true, jsonConfig);
+            JSONGeneral.writeFormatOutSymbols(writer, indentPlus, true, jsonConfig);
             if (value != null) {
                 if (unCamelCaseToUnderline) {
                     fieldSerializer.writeFieldNameAndColonTo(writer);
@@ -126,7 +127,7 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
             }
         }
         if (!isEmptyFlag) {
-            writeEndFormatOutSymbols(writer, indentLevel, true, jsonConfig);
+            JSONGeneral.writeEndFormatOutSymbols(writer, indentLevel, true, jsonConfig);
         }
     }
 
@@ -134,16 +135,14 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
     protected final void serialize(Object obj, JSONWriter writer, JSONConfig jsonConfig, int indentLevel) throws Exception {
         Class<?> entityClass = obj.getClass();
         if (entityClass == pojoClass) {
-            int hashcode = -1;
-            if (jsonConfig.skipCircularReference) {
-                if (jsonConfig.getStatus(hashcode = System.identityHashCode(obj)) == 0) {
+            if (jsonConfig.isSkipCircularReference()) {
+                if (writer.enterCircular(obj)) {
                     writer.writeNull();
                     return;
                 }
-                jsonConfig.setStatus(hashcode, 0);
             }
             writer.writeJSONToken('{');
-            boolean formatOut = jsonConfig.formatOut;
+            boolean formatOut = jsonConfig.optionConfig.formatOut;
             T entity = (T) obj;
             if (formatOut) {
                 serializePojoFormatOut(entity, writer, jsonConfig, indentLevel);
@@ -151,8 +150,8 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
                 serializePojoCompact(entity, writer, jsonConfig, indentLevel);
             }
             writer.write('}');
-            if (jsonConfig.skipCircularReference) {
-                jsonConfig.setStatus(hashcode, -1);
+            if (jsonConfig.isSkipCircularReference()) {
+                writer.exitCircular(obj);
             }
         } else {
             JSONTypeSerializer serializer = pojoStructure.store.getTypeSerializer(entityClass);
@@ -165,11 +164,11 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
     }
 
     protected final static Object invokeValue(JSONPojoFieldSerializer fieldSerializer, Object pojo) throws Exception {
-        return JSON_SECURE_TRUSTED_ACCESS.get(fieldSerializer.getterInfo, pojo);
+        return JSONGeneral.JSON_SECURE_TRUSTED_ACCESS.get(fieldSerializer.getterInfo, pojo);
     }
 
     protected final static <T> T invokeValue(JSONPojoFieldSerializer fieldSerializer, Object pojo, Class<T> tClass) throws Exception {
-        return (T) JSON_SECURE_TRUSTED_ACCESS.get(fieldSerializer.getterInfo, pojo);
+        return (T) JSONGeneral.JSON_SECURE_TRUSTED_ACCESS.get(fieldSerializer.getterInfo, pojo);
     }
 
     protected final static void writeMemory(JSONWriter jsonWriter, long fourChars1, long fourChars2, long fourBytes, int len) throws IOException {
@@ -185,31 +184,31 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
         int len = values.length;
         if (len > 0) {
             jsonWriter.writeJSONToken('[');
-            writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+            JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
             int i = 1;
             jsonWriter.writeStringCompatibleNull(values[0]);
             if ((len & 1) == 0) {
                 jsonWriter.writeJSONToken(',');
-                writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
                 jsonWriter.writeStringCompatibleNull(values[1]);
                 ++i;
             }
             for (; i < len; i = i + 2) {
                 jsonWriter.writeJSONToken(',');
-                writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
                 jsonWriter.writeStringCompatibleNull(values[i]);
                 jsonWriter.writeJSONToken(',');
-                writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
                 jsonWriter.writeStringCompatibleNull(values[i + 1]);
             }
-            writeEndFormatOutSymbols(jsonWriter, level, true, jsonConfig);
+            JSONGeneral.writeEndFormatOutSymbols(jsonWriter, level, true, jsonConfig);
             jsonWriter.writeJSONToken(']');
         } else {
             jsonWriter.writeEmptyArray();
         }
     }
 
-    protected final static void writeStringCollectionFormatOut(JSONWriter jsonWriter, Collection values, JSONConfig jsonConfig, int level) throws IOException {
+    protected final static void writeStringCollectionFormatOut(JSONWriter jsonWriter, Collection<?> values, JSONConfig jsonConfig, int level) throws IOException {
         int size = values.size();
         final int levelPlus = level + 1;
         if (size > 0) {
@@ -221,10 +220,10 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
                 } else {
                     hasAddFlag = true;
                 }
-                writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
                 jsonWriter.writeStringCompatibleNull((String) value);
             }
-            writeEndFormatOutSymbols(jsonWriter, level, true, jsonConfig);
+            JSONGeneral.writeEndFormatOutSymbols(jsonWriter, level, true, jsonConfig);
             jsonWriter.writeJSONToken(']');
         } else {
             jsonWriter.writeEmptyArray();
@@ -237,23 +236,23 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
         if (len > 0) {
             jsonWriter.writeJSONToken('[');
             int i = 1;
-            writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+            JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
             jsonWriter.writeLong(values[0]);
             if ((len & 1) == 0) {
                 jsonWriter.writeJSONToken(',');
-                writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
                 jsonWriter.writeLong(values[1], jsonConfig);
                 ++i;
             }
             for (; i < len; i = i + 2) {
                 jsonWriter.writeJSONToken(',');
-                writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
                 jsonWriter.writeLong(values[i], jsonConfig);
                 jsonWriter.writeJSONToken(',');
-                writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
                 jsonWriter.writeLong(values[i + 1], jsonConfig);
             }
-            writeEndFormatOutSymbols(jsonWriter, level, true, jsonConfig);
+            JSONGeneral.writeEndFormatOutSymbols(jsonWriter, level, true, jsonConfig);
             jsonWriter.writeJSONToken(']');
         } else {
             jsonWriter.writeEmptyArray();
@@ -266,23 +265,23 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
         if (len > 0) {
             jsonWriter.writeJSONToken('[');
             int i = 1;
-            writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+            JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
             jsonWriter.writeDouble(values[0]);
             if ((len & 1) == 0) {
                 jsonWriter.writeJSONToken(',');
-                writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
                 jsonWriter.writeDouble(values[1]);
                 ++i;
             }
             for (; i < len; i = i + 2) {
                 jsonWriter.writeJSONToken(',');
-                writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
                 jsonWriter.writeDouble(values[i]);
                 jsonWriter.writeJSONToken(',');
-                writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
+                JSONGeneral.writeFormatOutSymbols(jsonWriter, levelPlus, jsonConfig);
                 jsonWriter.writeDouble(values[i + 1]);
             }
-            writeEndFormatOutSymbols(jsonWriter, level, true, jsonConfig);
+            JSONGeneral.writeEndFormatOutSymbols(jsonWriter, level, true, jsonConfig);
             jsonWriter.writeJSONToken(']');
         } else {
             jsonWriter.writeEmptyArray();
@@ -306,7 +305,7 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
      * @return java source object
      */
     public static JavaSourceObject generateJavaCodeSource(Class<?> pojoClass, boolean printJavaSource) {
-        return generateJavaCodeSource(pojoClass, printJavaSource, false);
+        return generateJavaCodeSource(pojoClass, printJavaSource, true);
     }
 
     /**
@@ -339,5 +338,25 @@ public class JSONPojoSerializer<T> extends JSONTypeSerializer {
      */
     public static JavaSourceObject generateJavaCodeSource(Class<?> pojoClass) {
         return generateJavaCodeSource(pojoClass, false);
+    }
+
+    protected final static void writeFormatOutSymbols(JSONWriter content, int level, boolean formatOut, JSONConfig jsonConfig) throws IOException {
+        JSONGeneral.writeFormatOutSymbols(content, level, formatOut, jsonConfig);
+    }
+
+    protected final static void writeEndFormatOutSymbols(JSONWriter content, int level, boolean formatOut, JSONConfig jsonConfig) throws IOException {
+        JSONGeneral.writeEndFormatOutSymbols(content, level, formatOut, jsonConfig);
+    }
+
+    protected final static void writeFormatOutSymbols(JSONWriter content, int level, JSONConfig jsonConfig) throws IOException {
+        JSONGeneral.writeFormatOutSymbols(content, level, jsonConfig);
+    }
+
+    protected final static Object getStringValue(String value) {
+        return JSONMemoryHandle.getStringValue(value.toString());
+    }
+
+    protected final static char[] getChars(String value) {
+        return UnsafeHelper.getChars(value);
     }
 }

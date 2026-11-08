@@ -120,7 +120,7 @@ public class JSONReader extends JSONAbstractReader {
      * @return
      */
     public static JSONReader from(String json) {
-        return new JSONReader(getChars(json));
+        return new JSONReader(JSONGeneral.getChars(json));
     }
 
     /**

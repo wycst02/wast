@@ -138,7 +138,7 @@ public final class JSONPojoStructure {
                     priority = true;
                 }
             }
-            JSONPojoFieldDeserializer fieldDeserializer = new JSONPojoFieldDeserializer(store, name, setterInfo, definition);
+            JSONPojoFieldDeserializer fieldDeserializer = JSONPojoFieldDeserializer.createFieldDeserializer(store, name, setterInfo, definition);
             fieldDeserializer.setPriority(priority);
             fieldDeserializerHashMap.put(name, fieldDeserializer);
 
