@@ -139,7 +139,7 @@ public final class UnsafeHelper {
     static {
         long overrideOffset;
         try {
-            //note: jdk18 not supported
+            //note: jdk12 not supported
             Field overrideField = AccessibleObject.class.getDeclaredField("override");
             overrideOffset = objectFieldOffset(overrideField);
         } catch (NoSuchFieldException e) {
