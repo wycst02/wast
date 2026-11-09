@@ -181,7 +181,7 @@ public final class UnsafeHelper {
             Method plain = Object.class.getMethod("toString");
             Method accessible = Object.class.getMethod("toString");
             accessible.setAccessible(true);
-            for (long offset = 8; offset <= 12; offset += 4) {
+            for (long offset = 8; offset <= 16; offset += 4) {
                 if (UNSAFE.getInt(plain, offset) == 0 && UNSAFE.getInt(accessible, offset) == 1) {
                     return offset;
                 }
