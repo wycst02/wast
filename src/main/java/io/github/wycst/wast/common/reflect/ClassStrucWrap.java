@@ -20,7 +20,7 @@ import java.util.*;
 public final class ClassStrucWrap {
 
     // cache
-    private final static Map<Class<?>, ClassStrucWrap> CLASS_STRUC_WRAP_MAP = new ArrayQueueMap<Class<?>, ClassStrucWrap>(8192);
+    private final static ArrayQueueMap<Class<?>, ClassStrucWrap> CLASS_STRUC_WRAP_MAP = new ArrayQueueMap<Class<?>, ClassStrucWrap>(8192);
     private static final Map<Class<?>, List<?>> COMPATIBLE_TYPES = new HashMap<Class<?>, List<?>>();
     // 内置类默认使用field序列化，可维护超类列表控制使用getter method
     private static final Class<?>[] USE_GETTER_METHOD_TYPE_LIST = {
@@ -243,8 +243,9 @@ public final class ClassStrucWrap {
             return null;
         }
         synchronized (sourceClass) {
-            if (CLASS_STRUC_WRAP_MAP.containsKey(sourceClass)) {
-                return CLASS_STRUC_WRAP_MAP.get(sourceClass);
+            wrapper = CLASS_STRUC_WRAP_MAP.get(sourceClass);
+            if (wrapper != null) {
+                return wrapper;
             }
             wrapper = createBy(sourceClass);
             CLASS_STRUC_WRAP_MAP.put(sourceClass, wrapper);

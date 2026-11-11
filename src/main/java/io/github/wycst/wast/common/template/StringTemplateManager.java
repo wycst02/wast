@@ -2,8 +2,8 @@ package io.github.wycst.wast.common.template;
 
 import io.github.wycst.wast.common.utils.StringUtils;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 模板管理
@@ -15,7 +15,7 @@ import java.util.Map;
 public class StringTemplateManager {
 
     // 模板列表
-    private static Map<String, StringTemplate> resourceTemplates = new HashMap<String, StringTemplate>();
+    private static Map<String, StringTemplate> resourceTemplates = new ConcurrentHashMap<String, StringTemplate>();
 
     /**
      * 获取资源模板对象

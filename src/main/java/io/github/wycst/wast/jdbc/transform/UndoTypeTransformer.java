@@ -1,5 +1,7 @@
 package io.github.wycst.wast.jdbc.transform;
 
+import io.github.wycst.wast.common.reflect.GenericParameterizedType;
+
 /**
  *
  */
@@ -11,7 +13,7 @@ public class UndoTypeTransformer extends TypeTransformer {
     }
 
     @Override
-    public Object toJavaField(Object value) {
+    public Object toJavaField(Object value, GenericParameterizedType parameterizedType) {
         return null;
     }
 

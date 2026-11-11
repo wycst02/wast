@@ -101,7 +101,7 @@ public final class JSONGeneral {
     }
 
     public final static int DIRECT_READ_BUFFER_SIZE = 8192;
-    final static Map<String, TimeZone> GMT_TIME_ZONE_MAP = new ArrayQueueMap<String, TimeZone>(256);
+    final static ArrayQueueMap<String, TimeZone> GMT_TIME_ZONE_MAP = new ArrayQueueMap<String, TimeZone>(256);
 
     // zero zone
     public final static TimeZone ZERO_TIME_ZONE = TimeZone.getTimeZone("GMT+00:00");
@@ -144,7 +144,7 @@ public final class JSONGeneral {
     final static double[] EMPTY_DOUBLES = new double[0];
     final static String[] EMPTY_STRINGS = new String[0];
     // Default interface or abstract class implementation class configuration
-    static final Map<Class<?>, JSONImplInstCreator> DEFAULT_IMPL_INST_CREATOR_MAP = new ArrayQueueMap<Class<?>, JSONImplInstCreator>(512);
+    static final ArrayQueueMap<Class<?>, JSONImplInstCreator> DEFAULT_IMPL_INST_CREATOR_MAP = new ArrayQueueMap<Class<?>, JSONImplInstCreator>(512);
     protected final static JSONSecureTrustedAccess JSON_SECURE_TRUSTED_ACCESS = new JSONSecureTrustedAccess();
     protected final static int[] TWO_DIGITS_VALUES = new int[256];
     protected final static int[] THREE_DIGITS_MUL10 = new int[10 << 8];  // 2560
@@ -1667,10 +1667,8 @@ public final class JSONGeneral {
     // 获取时钟，默认GMT
     static TimeZone getTimeZone(String timeZoneId) {
         if (timeZoneId != null && timeZoneId.trim().length() > 0) {
-            TimeZone timeZone;
-            if (GMT_TIME_ZONE_MAP.containsKey(timeZoneId)) {
-                timeZone = GMT_TIME_ZONE_MAP.get(timeZoneId);
-            } else {
+            TimeZone timeZone = GMT_TIME_ZONE_MAP.get(timeZoneId);
+            if (timeZone == null) {
                 if (timeZoneId.startsWith("GMT")) {
                     timeZone = TimeZone.getTimeZone(timeZoneId);
                 } else {

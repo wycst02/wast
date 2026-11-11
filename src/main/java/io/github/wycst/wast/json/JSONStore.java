@@ -44,16 +44,16 @@ final class JSONStore {
     final JSONTypeSerializer[] TYPE_SERIALIZERS = new JSONTypeSerializer[CATEGORY_LEN];
 
     // POJO structure cache
-    final Map<Class<?>, JSONPojoStructure> pojoStrucs = new ArrayQueueMap<Class<?>, JSONPojoStructure>(8192);
+    final ArrayQueueMap<Class<?>, JSONPojoStructure> pojoStrucs = new ArrayQueueMap<Class<?>, JSONPojoStructure>(8192);
     // Type deserializer cache
     final Map<Class<?>, JSONTypeDeserializer> deserializerMap;
-    final Map<Class<?>, JSONTypeDeserializer> temporaryDeserializerMap = new HashMap<Class<?>, JSONTypeDeserializer>();
+    final Map<Class<?>, JSONTypeDeserializer> temporaryDeserializerMap = new ConcurrentHashMap<Class<?>, JSONTypeDeserializer>();
     final Set<Class<?>> registeredDeserializerApplyAllSubTypes = new HashSet<Class<?>>();
     static Set<Class<?>> BUILT_IN_DESER_SET;
 
     // Type serializer cache
     final Map<Class<?>, JSONTypeSerializer> serializerMap;
-    final Map<Class<?>, JSONTypeSerializer> temporarySerializerMap = new HashMap<Class<?>, JSONTypeSerializer>();
+    final Map<Class<?>, JSONTypeSerializer> temporarySerializerMap = new ConcurrentHashMap<Class<?>, JSONTypeSerializer>();
     final Set<Class<?>> registeredSerializerApplyAllSubTypes = new HashSet<Class<?>>();
     static Set<Class<?>> BUILT_IN_SER_SET;
 
@@ -78,8 +78,8 @@ final class JSONStore {
     JSONTypeSerializer STRING_SER;
 
     public JSONStore() {
-        deserializerMap = new HashMap<Class<?>, JSONTypeDeserializer>(64);
-        serializerMap = new HashMap<Class<?>, JSONTypeSerializer>(64);
+        deserializerMap = new ConcurrentHashMap<Class<?>, JSONTypeDeserializer>(64);
+        serializerMap = new ConcurrentHashMap<Class<?>, JSONTypeSerializer>(64);
 
         STRING_DESER = JSONTypeDeserializer.CHAR_SEQUENCE_STRING;
         ARRAY_DESER = new JSONTypeDeserializer.ArrayImpl(this);
@@ -141,7 +141,7 @@ final class JSONStore {
     }
 
     void init() {
-        putTypeDeserializer(ANY_DESER, null, Object.class);
+        putTypeDeserializer(ANY_DESER, Object.class);
         putTypeDeserializer(HASH_TABLE_DESER, Dictionary.class, Hashtable.class);
         putTypeDeserializer(MAP_DESER, Map.class, HashMap.class, LinkedHashMap.class);
         putTypeDeserializer(COLLECTION_DESER, List.class, Set.class);
@@ -204,8 +204,9 @@ final class JSONStore {
             return pojoStructure;
         }
         synchronized (pojoClass) {
-            if (pojoStrucs.containsKey(pojoClass)) {
-                return pojoStrucs.get(pojoClass);
+            pojoStructure = pojoStrucs.get(pojoClass);
+            if (pojoStructure != null) {
+                return pojoStructure;
             }
             ClassStrucWrap wrap = ClassStrucWrap.get(pojoClass);
             if (wrap == null) {
@@ -220,6 +221,9 @@ final class JSONStore {
     // Get the corresponding deserializer according to the type
     // Single example may be used
     public JSONTypeDeserializer getTypeDeserializer(Class<?> type) {
+        if (type == null) {
+            return ANY_DESER;
+        }
         JSONTypeDeserializer deserializer = deserializerMap.get(type);
         if (deserializer != null) {
             return deserializer;

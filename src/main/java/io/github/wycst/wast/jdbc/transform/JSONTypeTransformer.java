@@ -1,5 +1,6 @@
 package io.github.wycst.wast.jdbc.transform;
 
+import io.github.wycst.wast.common.reflect.GenericParameterizedType;
 import io.github.wycst.wast.json.JSON;
 
 /**
@@ -13,7 +14,7 @@ public class JSONTypeTransformer extends TypeTransformer {
     }
 
     @Override
-    public Object toJavaField(Object value) {
-        return value == null ? null : JSON.parse((String) value, getParameterizedType());
+    public Object toJavaField(Object value, GenericParameterizedType parameterizedType) {
+        return value == null ? null : JSON.parse((String) value, parameterizedType);
     }
 }

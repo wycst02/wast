@@ -54,7 +54,7 @@ public abstract class JSONTypeDeserializer {
     final static SerializableImpl SERIALIZABLE_DESERIALIZER = new SerializableImpl(); // for java.io.Serializable
 
     // classname mapping
-    static final Map<String, Class<?>> CLASS_NAME_MAPPING = new ArrayQueueMap<String, Class<?>>(512);
+    static final ArrayQueueMap<String, Class<?>> CLASS_NAME_MAPPING = new ArrayQueueMap<String, Class<?>>(512);
 
     // any
     protected static JSONTypeDeserializer ANY;

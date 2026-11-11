@@ -260,7 +260,6 @@ public final class CollectionUtils {
      *
      * @param collection
      * @param componentType
-     * @return
      */
     public static Object toArray(Collection collection, Class<?> componentType) {
         componentType.getClass();
@@ -280,9 +279,4 @@ public final class CollectionUtils {
         return array;
     }
 
-    public static void clear(Object[] values) {
-        for (int i = 0, len = values.length; i < len; ++i) {
-            values[i] = null;
-        }
-    }
 }

@@ -7,16 +7,6 @@ import io.github.wycst.wast.common.reflect.GenericParameterizedType;
  */
 public abstract class TypeTransformer<E> {
 
-    protected GenericParameterizedType parameterizedType;
-
-    public final void setParameterizedType(GenericParameterizedType parameterizedType) {
-        this.parameterizedType = parameterizedType;
-    }
-
-    public GenericParameterizedType getParameterizedType() {
-        return parameterizedType;
-    }
-
     /**
      * from从java属性读出或转化需要往数据库中插入的值
      *
@@ -31,5 +21,5 @@ public abstract class TypeTransformer<E> {
      * @param value
      * @return
      */
-    public abstract E toJavaField(Object value);
+    public abstract E toJavaField(Object value, GenericParameterizedType parameterizedType);
 }

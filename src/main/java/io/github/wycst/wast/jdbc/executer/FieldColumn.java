@@ -184,7 +184,7 @@ public class FieldColumn {
     }
 
     public Object transform(Object fieldValue) {
-        return typeTransformer.toJavaField(fieldValue);
+        return typeTransformer.toJavaField(fieldValue, setterInfo.getGenericParameterizedType());
     }
 
     boolean isDisabledOnSelect() {

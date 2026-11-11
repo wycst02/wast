@@ -12,41 +12,40 @@ import java.util.*;
 /**
  * 反射常量
  *
- * @Author: wangy
- * @Date: 2019/12/21 15:27
- * @Description:
+ * @since  2019/12/21 15:27
+ * @author wangy
  */
 public final class ReflectConsts {
 
     /**
      * Cache type class classification
      */
-    private final static Map<Class, ClassCategory> classClassCategoryMap = new ArrayQueueMap<Class, ClassCategory>(8192);
+    private final static ArrayQueueMap<Class<?>, ClassCategory> classClassCategoryMap = new ArrayQueueMap<Class<?>, ClassCategory>(8192);
 
     static {
 
         // 字节数组(将Byte除去)
         putAllType(ClassCategory.Binary, byte[].class/*, Byte[].class*/);
 
-        /** 预置常用集合类型 */
+        /* 预置常用集合类型 */
         putAllType(ClassCategory.CollectionCategory, ArrayList.class, HashSet.class);
 
-        /** 预置常用Map类型 */
+        /* 预置常用Map类型 */
         putAllType(ClassCategory.MapCategory, HashMap.class, LinkedHashMap.class);
 
-        /** 预置常用CharSequence类型 */
+        /* 预置常用CharSequence类型 */
         putAllType(ClassCategory.CharSequence, String.class, char[].class, StringBuilder.class, StringBuffer.class, char.class, Character.class);
 
-        /** 预置常用Number类型 */
+        /* 预置常用Number类型 */
         putAllType(ClassCategory.NumberCategory, BigDecimal.class, BigInteger.class, int.class, Integer.class, byte.class, Byte.class, short.class, Short.class, float.class, Float.class, long.class, Long.class, double.class, Double.class);
 
-        /** boolean */
+        /* boolean */
         putAllType(ClassCategory.BoolCategory, boolean.class, Boolean.class);
 
-        /** Date */
+        /* Date */
         putAllType(ClassCategory.DateCategory, Date.class, Timestamp.class, java.sql.Date.class);
 
-        /** 任意类型 */
+        /* 任意类型 */
         putAllType(ClassCategory.ANY, Object.class);
     }
 
@@ -57,9 +56,7 @@ public final class ReflectConsts {
         }
     }
 
-    private synchronized static void putType(Class<?> cls, ClassCategory classCategory) {
-        // Prevent accidental explosion
-        if (classClassCategoryMap.size() >= 1 << 12) return;
+    private static void putType(Class<?> cls, ClassCategory classCategory) {
         classClassCategoryMap.put(cls, classCategory);
     }
 

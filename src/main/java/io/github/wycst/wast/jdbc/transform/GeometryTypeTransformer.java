@@ -1,5 +1,6 @@
 package io.github.wycst.wast.jdbc.transform;
 
+import io.github.wycst.wast.common.reflect.GenericParameterizedType;
 import io.github.wycst.wast.common.beans.geo.Geometry;
 
 public class GeometryTypeTransformer extends TypeTransformer<Geometry> {
@@ -10,7 +11,7 @@ public class GeometryTypeTransformer extends TypeTransformer<Geometry> {
     }
 
     @Override
-    public Geometry toJavaField(Object value) {
+    public Geometry toJavaField(Object value, GenericParameterizedType parameterizedType) {
         return value == null ? null : Geometry.from(value.toString());
     }
 }
