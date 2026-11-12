@@ -360,7 +360,7 @@ public final class GenericParameterizedType<T> {
             Type genericComponentType = genericArrayType.getGenericComponentType();
 
             // jdk6 char[]等基础数据的genericType依然是Type(数组加componentType)
-            // jdk7+ char[]等基础数据的enericType已经是一个数组类型(char[].class)
+            // jdk7+ char[]等基础数据的genericType已经是一个数组类型(char[].class)
             ReflectConsts.PrimitiveType primitiveType;
             // jdk1.6 兼容处理
             if (genericComponentType instanceof Class && (primitiveType = ReflectConsts.PrimitiveType.typeOf((Class) genericComponentType)) != null) {

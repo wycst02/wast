@@ -128,7 +128,7 @@ System.out.println(map);
 2.通过JSON静态方法针对不同的类型来做个性化支持或者功能支持,非常方便;
 
 ```
-    JSON.registerTypeMapper(java.time.ZoneId.class, new JSONTypeMapper<ZoneId>() {
+    JSON.register(java.time.ZoneId.class, new JSONTypeMapper<ZoneId>() {
         @Override
         public ZoneId readOf(Object any) {
             return any == null ? null : ZoneId.of((String) any);

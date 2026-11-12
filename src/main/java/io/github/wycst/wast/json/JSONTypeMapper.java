@@ -20,7 +20,7 @@ public interface JSONTypeMapper<T> {
     T readOf(Object value) throws Exception;
 
     /**
-     * 反序列化时将T转化为基本对象
+     * 序列化时将T转化为基本对象
      *
      * @param value      指定对象T
      * @param jsonConfig json配置

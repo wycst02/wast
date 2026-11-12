@@ -234,7 +234,7 @@ public interface OqlExecuter {
     public <E> Page<E> queryPage(Page<E> page);
 
     /**
-     * 分页查询（map得key&value）
+     * 分页查询（map的key&value）
      *
      * @param page
      * @param params

@@ -57,7 +57,7 @@ public class CompilerEnvironment extends EvaluateEnvironment {
      * note: 解决在javassist编译下泛型和基本类型（泛型不支持）引发生成的方法导致表达式调用类型不匹配问题；
      * ps: 如果使用javassist编译带有自定义注册函数的表达式，请使用数组替换可变参数（javassist不支持）；
      *
-     * @param name     函数得名称，再表达式种通过@标识符调用
+     * @param name     函数名称，在表达式中通过@标识符调用
      * @param function 函数对象
      * @return
      */

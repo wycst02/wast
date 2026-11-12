@@ -1,7 +1,7 @@
 package io.github.wycst.wast.json;
 
 /**
- * 使用枚举定义JSON得6种数据类型
+ * 使用枚举定义JSON的6种数据类型
  *
  * @author wangy
  */
