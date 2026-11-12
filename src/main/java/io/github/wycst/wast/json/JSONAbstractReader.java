@@ -271,6 +271,15 @@ abstract class JSONAbstractReader {
     }
 
     private Object readObject() throws Exception {
+        try {
+            parseContext.enter();
+            return readObject0();
+        } finally {
+            parseContext.leave();
+        }
+    }
+
+    private Object readObject0() throws Exception {
         Map instance = new LinkedHashMap();
         for (; ; ) {
             clearWhitespaces();
@@ -508,6 +517,15 @@ abstract class JSONAbstractReader {
     }
 
     private Object readArray() throws Exception {
+        try {
+            parseContext.enter();
+            return readArray0();
+        } finally {
+            parseContext.leave();
+        }
+    }
+
+    private Object readArray0() throws Exception {
         Collection<Object> arrayList = new ArrayList<Object>();
 //        int elementIndex = 0;
         for (; ; ) {
@@ -521,14 +539,12 @@ abstract class JSONAbstractReader {
             }
             switch (current) {
                 case '{': {
-                    Object value = this.readObject();
-                    arrayList.add(value);
+                    arrayList.add(this.readObject());
                     break;
                 }
                 case '[': {
                     // 2 [ array
-                    Object value = this.readArray();
-                    arrayList.add(value);
+                    arrayList.add(this.readArray());
                     break;
                 }
                 case '"': {
@@ -580,6 +596,15 @@ abstract class JSONAbstractReader {
      * @throws Exception
      */
     Object readObject(String path, GenericParameterizedType<?> genericType) throws Exception {
+        try {
+            parseContext.enter();
+            return readObject0(path, genericType);
+        } finally {
+            parseContext.leave();
+        }
+    }
+
+    Object readObject0(String path, GenericParameterizedType<?> genericType) throws Exception {
         Object instance;
         Map map = null;
         ClassStrucWrap classStrucWrap = null;
@@ -731,6 +756,15 @@ abstract class JSONAbstractReader {
     }
 
     final Object readArray(String path, GenericParameterizedType<?> genericType) throws Exception {
+        try {
+            parseContext.enter();
+            return readArray0(path, genericType);
+        } finally {
+            parseContext.leave();
+        }
+    }
+
+    final Object readArray0(String path, GenericParameterizedType<?> genericType) throws Exception {
 
         Object instance;
         Collection<?> collection;
@@ -904,6 +938,15 @@ abstract class JSONAbstractReader {
     }
 
     private void skipObject() throws Exception {
+        try {
+            parseContext.enter();
+            skipObject0();
+        } finally {
+            parseContext.leave();
+        }
+    }
+
+    private void skipObject0() throws Exception {
         for (; ; ) {
             clearWhitespaces();
             if (current == '}') {
@@ -937,6 +980,15 @@ abstract class JSONAbstractReader {
     }
 
     private void skipArray() throws Exception {
+        try {
+            parseContext.enter();
+            skipArray0();
+        } finally {
+            parseContext.leave();
+        }
+    }
+
+    private void skipArray0() throws Exception {
         for (; ; ) {
             clearWhitespaces();
             if (current == ']') {

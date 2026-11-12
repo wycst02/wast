@@ -516,10 +516,18 @@ final class JSONDefaultParser {
     private Object readValue(CharSource source, byte[] bytes, int i, byte b, byte endChar, JSONParseContext parseContext) throws Exception {
         switch (b) {
             case '{': {
-                return parseJSONObject(source, bytes, i, parseContext.defaultMap(), parseContext);
+                try {
+                    return parseJSONObject(source, bytes, i, parseContext.defaultMap(), parseContext.enter());
+                } finally {
+                    parseContext.leave();
+                }
             }
             case '[': {
-                return parseJSONArray(source, bytes, i, parseContext.defaultList(), parseContext);
+                try {
+                    return parseJSONArray(source, bytes, i, parseContext.defaultList(), parseContext.enter());
+                } finally {
+                    parseContext.leave();
+                }
             }
             case '\'':
             case '"': {
@@ -543,10 +551,18 @@ final class JSONDefaultParser {
     private Object readValue(CharSource source, char[] buf, int i, char ch, char endChar, JSONParseContext parseContext) throws Exception {
         switch (ch) {
             case '{': {
-                return parseJSONObject(source, buf, i, parseContext.defaultMap(), parseContext);
+                try {
+                    return parseJSONObject(source, buf, i, parseContext.defaultMap(), parseContext.enter());
+                } finally {
+                    parseContext.leave();
+                }
             }
             case '[': {
-                return parseJSONArray(source, buf, i, parseContext.defaultList(), parseContext);
+                try {
+                    return parseJSONArray(source, buf, i, parseContext.defaultList(), parseContext.enter());
+                } finally {
+                    parseContext.leave();
+                }
             }
             case '\'':
             case '"': {

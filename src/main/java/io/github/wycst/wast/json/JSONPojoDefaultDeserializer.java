@@ -49,7 +49,11 @@ public class JSONPojoDefaultDeserializer<T> extends JSONPojoDeserializer {
     protected final T deserialize(CharSource charSource, char[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object entity, int endToken, JSONParseContext jsonParseContext) throws Exception {
         char beginChar = buf[fromIndex];
         if (beginChar == '{') {
-            return (T) deserializePojo(charSource, buf, fromIndex, parameterizedType, entity, jsonParseContext);
+            try {
+                return (T) deserializePojo(charSource, buf, fromIndex, parameterizedType, entity, jsonParseContext.enter());
+            } finally {
+                jsonParseContext.leave();
+            }
         } else if (beginChar == 'n') {
             parseNull(buf, fromIndex, jsonParseContext);
             return null;
@@ -67,7 +71,11 @@ public class JSONPojoDefaultDeserializer<T> extends JSONPojoDeserializer {
     protected final T deserialize(CharSource charSource, byte[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object entity, int endToken, JSONParseContext jsonParseContext) throws Exception {
         byte beginByte = buf[fromIndex];
         if (beginByte == '{') {
-            return (T) deserializePojo(charSource, buf, fromIndex, parameterizedType, entity, jsonParseContext);
+            try {
+                return (T) deserializePojo(charSource, buf, fromIndex, parameterizedType, entity, jsonParseContext.enter());
+            } finally {
+                jsonParseContext.leave();
+            }
         } else if (beginByte == 'n') {
             parseNull(buf, fromIndex, jsonParseContext);
             return null;

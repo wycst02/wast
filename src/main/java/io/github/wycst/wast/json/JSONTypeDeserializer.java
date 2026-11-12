@@ -2119,7 +2119,11 @@ public abstract class JSONTypeDeserializer {
                     return parseNull(buf, fromIndex, parseContext);
                 }
                 case '{': {
-                    return JSONStore.INSTANCE.OBJECT_DESER.deserializeObject(charSource, buf, fromIndex, parameterizedType, instance, parseContext);
+                    try {
+                        return JSONStore.INSTANCE.OBJECT_DESER.deserializeObject(charSource, buf, fromIndex, parameterizedType, instance, parseContext.enter());
+                    } finally {
+                        parseContext.leave();
+                    }
                 }
                 default: {
                     // long
@@ -2144,7 +2148,11 @@ public abstract class JSONTypeDeserializer {
                     return parseNull(bytes, fromIndex, parseContext);
                 }
                 case '{': {
-                    return JSONStore.INSTANCE.OBJECT_DESER.deserializeObject(charSource, bytes, fromIndex, parameterizedType, instance, parseContext);
+                    try {
+                        return JSONStore.INSTANCE.OBJECT_DESER.deserializeObject(charSource, bytes, fromIndex, parameterizedType, instance, parseContext.enter());
+                    } finally {
+                        parseContext.leave();
+                    }
                 }
                 default: {
                     // long
@@ -2512,7 +2520,11 @@ public abstract class JSONTypeDeserializer {
                     return parseBytesOfBuf0(fromIndex, endStringIndex - fromIndex - 1, buf, parseContext);
                 }
                 case '[': {
-                    return JSONStore.INSTANCE.ARRAY_DESER.deserialize(charSource, buf, fromIndex, GenericParameterizedType.arrayType(byte.class), null, '\0', parseContext);
+                    try {
+                        return JSONStore.INSTANCE.ARRAY_DESER.deserialize(charSource, buf, fromIndex, GenericParameterizedType.arrayType(byte.class), null, '\0', parseContext.enter());
+                    } finally {
+                        parseContext.leave();
+                    }
                 }
                 default: {
                     // not support
@@ -2536,7 +2548,11 @@ public abstract class JSONTypeDeserializer {
                     return parseBytesOfBuf0(fromIndex, endStringIndex - fromIndex - 1, buf, parseContext);
                 }
                 case '[': {
-                    return JSONStore.INSTANCE.ARRAY_DESER.deserialize(charSource, buf, fromIndex, GenericParameterizedType.arrayType(byte.class), null, endToken, parseContext);
+                    try {
+                        return JSONStore.INSTANCE.ARRAY_DESER.deserialize(charSource, buf, fromIndex, GenericParameterizedType.arrayType(byte.class), null, endToken, parseContext.enter());
+                    } finally {
+                        parseContext.leave();
+                    }
                 }
                 default: {
                     // not support
@@ -2705,7 +2721,11 @@ public abstract class JSONTypeDeserializer {
         protected Object deserialize(CharSource charSource, char[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, int endToken, JSONParseContext parseContext) throws Exception {
             char beginChar = buf[fromIndex];
             if (beginChar == '[') {
-                return deserializeArray(charSource, buf, fromIndex, parameterizedType, instance, parseContext);
+                try {
+                    return deserializeArray(charSource, buf, fromIndex, parameterizedType, instance, parseContext.enter());
+                } finally {
+                    parseContext.leave();
+                }
             } else if (beginChar == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             } else {
@@ -2722,7 +2742,11 @@ public abstract class JSONTypeDeserializer {
         protected Object deserialize(CharSource charSource, byte[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, int endToken, JSONParseContext parseContext) throws Exception {
             byte beginByte = buf[fromIndex];
             if (beginByte == '[') {
-                return deserializeArray(charSource, buf, fromIndex, parameterizedType, instance, parseContext);
+                try {
+                    return deserializeArray(charSource, buf, fromIndex, parameterizedType, instance, parseContext.enter());
+                } finally {
+                    parseContext.leave();
+                }
             } else if (beginByte == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             } else {
@@ -4133,7 +4157,11 @@ public abstract class JSONTypeDeserializer {
         protected Object deserialize(CharSource charSource, char[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, int endToken, JSONParseContext parseContext) throws Exception {
             char beginChar = buf[fromIndex];
             if (beginChar == '[') {
-                return deserializeCollection(charSource, buf, fromIndex, parameterizedType, instance, parseContext);
+                try {
+                    return deserializeCollection(charSource, buf, fromIndex, parameterizedType, instance, parseContext.enter());
+                } finally {
+                    parseContext.leave();
+                }
             } else if (beginChar == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
             } else {
@@ -4150,7 +4178,11 @@ public abstract class JSONTypeDeserializer {
         protected Object deserialize(CharSource charSource, byte[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, int endToken, JSONParseContext parseContext) throws Exception {
             byte beginByte = buf[fromIndex];
             if (beginByte == '[') {
-                return deserializeCollection(charSource, buf, fromIndex, parameterizedType, instance, parseContext);
+                try {
+                    return deserializeCollection(charSource, buf, fromIndex, parameterizedType, instance, parseContext.enter());
+                } finally {
+                    parseContext.leave();
+                }
             }
             if (beginByte == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
@@ -4643,7 +4675,11 @@ public abstract class JSONTypeDeserializer {
         protected Object deserialize(CharSource charSource, char[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object instance, int endToken, JSONParseContext parseContext) throws Exception {
             char beginChar = buf[fromIndex];
             if (beginChar == '{') {
-                return deserializeMap(charSource, buf, fromIndex, parameterizedType, instance, parseContext);
+                try {
+                    return deserializeMap(charSource, buf, fromIndex, parameterizedType, instance, parseContext.enter());
+                } finally {
+                    parseContext.leave();
+                }
             }
             if (beginChar == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
@@ -4661,7 +4697,11 @@ public abstract class JSONTypeDeserializer {
             byte beginByte = buf[fromIndex];
             char beginChar = (char) beginByte;
             if (beginChar == '{') {
-                return deserializeMap(charSource, buf, fromIndex, parameterizedType, instance, parseContext);
+                try {
+                    return deserializeMap(charSource, buf, fromIndex, parameterizedType, instance, parseContext.enter());
+                } finally {
+                    parseContext.leave();
+                }
             }
             if (beginChar == 'n') {
                 return parseNull(buf, fromIndex, parseContext);
@@ -5045,9 +5085,19 @@ public abstract class JSONTypeDeserializer {
             char beginChar = buf[fromIndex];
             switch (beginChar) {
                 case '{':
-                    return MAP.validate(charSource, buf, fromIndex, toIndex, endToken, parseContext);
+                    try {
+                        parseContext.enter();
+                        return MAP.validate(charSource, buf, fromIndex, toIndex, endToken, parseContext);
+                    } finally {
+                        parseContext.leave();
+                    }
                 case '[':
-                    return COLLECTION.validate(charSource, buf, fromIndex, toIndex, endToken, parseContext);
+                    try {
+                        parseContext.enter();
+                        return COLLECTION.validate(charSource, buf, fromIndex, toIndex, endToken, parseContext);
+                    } finally {
+                        parseContext.leave();
+                    }
                 case '\'':
                 case '"':
                     CHAR_SEQUENCE.skip(charSource, buf, fromIndex, beginChar, parseContext);
@@ -5076,9 +5126,19 @@ public abstract class JSONTypeDeserializer {
             byte beginByte = buf[fromIndex];
             switch (beginByte) {
                 case '{':
-                    return MAP.validate(charSource, buf, fromIndex, toIndex, endToken, parseContext);
+                    try {
+                        parseContext.enter();
+                        return MAP.validate(charSource, buf, fromIndex, toIndex, endToken, parseContext);
+                    } finally {
+                        parseContext.leave();
+                    }
                 case '[':
-                    return COLLECTION.validate(charSource, buf, fromIndex, toIndex, endToken, parseContext);
+                    try {
+                        parseContext.enter();
+                        return COLLECTION.validate(charSource, buf, fromIndex, toIndex, endToken, parseContext);
+                    } finally {
+                        parseContext.leave();
+                    }
                 case '\'':
                 case '"':
                     CHAR_SEQUENCE.skip(charSource, buf, fromIndex, beginByte, parseContext);
@@ -5107,10 +5167,20 @@ public abstract class JSONTypeDeserializer {
             char beginChar = buf[fromIndex];
             switch (beginChar) {
                 case '{':
-                    MAP.skip(charSource, buf, fromIndex, parseContext);
+                    try {
+                        parseContext.enter();
+                        MAP.skip(charSource, buf, fromIndex, parseContext);
+                    } finally {
+                        parseContext.leave();
+                    }
                     break;
                 case '[':
-                    COLLECTION.skip(charSource, buf, fromIndex, parseContext);
+                    try {
+                        parseContext.enter();
+                        COLLECTION.skip(charSource, buf, fromIndex, parseContext);
+                    } finally {
+                        parseContext.leave();
+                    }
                     break;
                 case '\'':
                 case '"':
@@ -5139,10 +5209,20 @@ public abstract class JSONTypeDeserializer {
             byte beginByte = buf[fromIndex];
             switch (beginByte) {
                 case '{':
-                    MAP.skip(charSource, buf, fromIndex, parseContext);
+                    try {
+                        parseContext.enter();
+                        MAP.skip(charSource, buf, fromIndex, parseContext);
+                    } finally {
+                        parseContext.leave();
+                    }
                     break;
                 case '[':
-                    COLLECTION.skip(charSource, buf, fromIndex, parseContext);
+                    try {
+                        parseContext.enter();
+                        COLLECTION.skip(charSource, buf, fromIndex, parseContext);
+                    } finally {
+                        parseContext.leave();
+                    }
                     break;
                 case '\'':
                 case '"':

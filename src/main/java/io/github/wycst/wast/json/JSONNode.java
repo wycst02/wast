@@ -1060,20 +1060,30 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             char ch = buf[beginIndex];
             switch (ch) {
                 case '{': {
-                    if (lazy) {
-                        JSONStore.INSTANCE.MAP_DESER.skip(charSource, buf, beginIndex, parseContext);
-                        node = new C(charSource, buf, beginIndex, parseContext.endIndex + 1, OBJECT, parseContext, root);
-                    } else {
-                        node = completeObjectNode(charSource, buf, beginIndex, createObj);
+                    try {
+                        parseContext.enter();
+                        if (lazy) {
+                            JSONStore.INSTANCE.MAP_DESER.skip(charSource, buf, beginIndex, parseContext);
+                            node = new C(charSource, buf, beginIndex, parseContext.endIndex + 1, OBJECT, parseContext, root);
+                        } else {
+                            node = completeObjectNode(charSource, buf, beginIndex, createObj);
+                        }
+                    } finally {
+                        parseContext.leave();
                     }
                     break;
                 }
                 case '[': {
-                    if (lazy) {
-                        JSONStore.INSTANCE.COLLECTION_DESER.skip(charSource, buf, beginIndex, parseContext);
-                        node = new C(charSource, buf, beginIndex, parseContext.endIndex + 1, ARRAY, parseContext, root);
-                    } else {
-                        node = completeArrayNode(charSource, buf, beginIndex, createObj);
+                    try {
+                        parseContext.enter();
+                        if (lazy) {
+                            JSONStore.INSTANCE.COLLECTION_DESER.skip(charSource, buf, beginIndex, parseContext);
+                            node = new C(charSource, buf, beginIndex, parseContext.endIndex + 1, ARRAY, parseContext, root);
+                        } else {
+                            node = completeArrayNode(charSource, buf, beginIndex, createObj);
+                        }
+                    } finally {
+                        parseContext.leave();
                     }
                     break;
                 }
@@ -1544,20 +1554,30 @@ public abstract class JSONNode implements Comparable<JSONNode> {
             byte ch = buf[beginIndex];
             switch (ch) {
                 case '{': {
-                    if (lazy) {
-                        JSONStore.INSTANCE.MAP_DESER.skip(charSource, buf, beginIndex, parseContext);
-                        node = new B(charSource, buf, beginIndex, parseContext.endIndex + 1, OBJECT, parseContext, root);
-                    } else {
-                        node = completeObjectNode(charSource, buf, beginIndex, createObj);
+                    try {
+                        parseContext.enter();
+                        if (lazy) {
+                            JSONStore.INSTANCE.MAP_DESER.skip(charSource, buf, beginIndex, parseContext);
+                            node = new B(charSource, buf, beginIndex, parseContext.endIndex + 1, OBJECT, parseContext, root);
+                        } else {
+                            node = completeObjectNode(charSource, buf, beginIndex, createObj);
+                        }
+                    } finally {
+                        parseContext.leave();
                     }
                     break;
                 }
                 case '[': {
-                    if (lazy) {
-                        JSONStore.INSTANCE.COLLECTION_DESER.skip(charSource, buf, beginIndex, parseContext);
-                        node = new B(charSource, buf, beginIndex, parseContext.endIndex + 1, ARRAY, parseContext, root);
-                    } else {
-                        node = completeArrayNode(charSource, buf, beginIndex, createObj);
+                    try {
+                        parseContext.enter();
+                        if (lazy) {
+                            JSONStore.INSTANCE.COLLECTION_DESER.skip(charSource, buf, beginIndex, parseContext);
+                            node = new B(charSource, buf, beginIndex, parseContext.endIndex + 1, ARRAY, parseContext, root);
+                        } else {
+                            node = completeArrayNode(charSource, buf, beginIndex, createObj);
+                        }
+                    } finally {
+                        parseContext.leave();
                     }
                     break;
                 }

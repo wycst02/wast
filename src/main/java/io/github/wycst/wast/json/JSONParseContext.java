@@ -1,5 +1,6 @@
 package io.github.wycst.wast.json;
 
+import io.github.wycst.wast.json.exceptions.JSONException;
 import io.github.wycst.wast.json.options.ReadOption;
 import io.github.wycst.wast.json.options.ReadOptionConfig;
 
@@ -39,6 +40,10 @@ public class JSONParseContext {
 
     String input;
     public int endIndex;
+    int depth;
+
+    public final static int MAX_NEST_DEPTH = 1024;
+
     JSONCharArrayWriter writer;
 
     boolean escape = true;
@@ -89,6 +94,7 @@ public class JSONParseContext {
     }
 
     void clear() {
+        depth = 0;
         if (writer != null) {
             writer.reset();
             writer = null;
@@ -136,6 +142,18 @@ public class JSONParseContext {
 
     protected final String getCacheKey(byte[] bytes, int offset, int len, long hashValue) {
         return JSONGeneral.getCacheKey(bytes, offset, len, hashValue, getTable32());
+    }
+
+    public final JSONParseContext enter() {
+        if (++depth > MAX_NEST_DEPTH) {
+            throw new JSONException("Nested too deeply, depth " + depth);
+        }
+        return this;
+    }
+
+    public final JSONParseContext leave() {
+        --depth;
+        return this;
     }
 
     public Map<Serializable, Object> defaultMap() {

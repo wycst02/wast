@@ -86,7 +86,11 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
     protected final T deserialize(CharSource charSource, char[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object entity, int endToken, JSONParseContext parseContext) throws Exception {
         char c = buf[fromIndex];
         if (c == '{') {
-            return (T) deserializePojo(charSource, buf, fromIndex, parameterizedType, entity, parseContext);
+            try {
+                return (T) deserializePojo(charSource, buf, fromIndex, parameterizedType, entity, parseContext.enter());
+            } finally {
+                parseContext.leave();
+            }
         } else if (c == 'n') {
             parseNull(buf, fromIndex, parseContext);
             return null;
@@ -103,7 +107,11 @@ public abstract class JSONPojoOptimizeDeserializer<T> extends JSONPojoDeserializ
     protected final T deserialize(CharSource charSource, byte[] buf, int fromIndex, GenericParameterizedType<?> parameterizedType, Object entity, int endToken, JSONParseContext parseContext) throws Exception {
         byte c = buf[fromIndex];
         if (c == '{') {
-            return (T) deserializePojo(charSource, buf, fromIndex, parameterizedType, entity, parseContext);
+            try {
+                return (T) deserializePojo(charSource, buf, fromIndex, parameterizedType, entity, parseContext.enter());
+            } finally {
+                parseContext.leave();
+            }
         } else if (c == 'n') {
             parseNull(buf, fromIndex, parseContext);
             return null;
