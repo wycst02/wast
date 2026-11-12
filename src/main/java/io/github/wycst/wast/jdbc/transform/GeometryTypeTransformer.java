@@ -1,7 +1,7 @@
 package io.github.wycst.wast.jdbc.transform;
 
-import io.github.wycst.wast.common.reflect.GenericParameterizedType;
 import io.github.wycst.wast.common.beans.geo.Geometry;
+import io.github.wycst.wast.common.reflect.GenericParameterizedType;
 
 public class GeometryTypeTransformer extends TypeTransformer<Geometry> {
 
