@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> 上游仓库 [`wycst/wast`](https://github.com/wycst/wast) 已停止维护。本仓库为 **活跃开发主线**，Issue、Pull Request、版本发布均以此仓库为准。
+
 ## 介绍
 
 WAST是一个高性能Java工具集库包，包括JSON、YAML、CSV、HttpClient、JDBC和EL引擎.
