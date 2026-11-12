@@ -8,9 +8,8 @@ import java.util.List;
 /**
  * 负载均衡轮询策略
  *
- * @Author: wangy
- * @Date: 2020/8/25 14:29
- * @Description:
+ * @author wangy
+ * @since 2020/8/25 14:29
  */
 public class PollingLoadBalanceStrategy extends AbstractLoadBalanceStrategy {
 

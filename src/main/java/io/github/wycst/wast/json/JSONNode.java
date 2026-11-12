@@ -84,7 +84,7 @@ import java.util.regex.Pattern;
  * <p>
  * More usage self discovery ...
  *
- * @Author: wangyunchao
+ * @author wangyunchao
  */
 @SuppressWarnings({"all"})
 public abstract class JSONNode implements Comparable<JSONNode> {

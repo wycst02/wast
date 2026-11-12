@@ -1,9 +1,8 @@
 package io.github.wycst.wast.jdbc.generator;
 
 /**
- * @Author: wangy
- * @Date: 2021/9/2 0:16
- * @Description:
+ * @author wangy
+ * @since 2021/9/2 0:16
  */
 public class GeneratorColumnOption {
 

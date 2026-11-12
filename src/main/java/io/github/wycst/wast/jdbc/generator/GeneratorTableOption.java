@@ -3,9 +3,8 @@ package io.github.wycst.wast.jdbc.generator;
 import java.util.List;
 
 /**
- * @Author: wangy
- * @Date: 2021/9/2 0:14
- * @Description:
+ * @author wangy
+ * @since 2021/9/2 0:14
  */
 public class GeneratorTableOption {
 

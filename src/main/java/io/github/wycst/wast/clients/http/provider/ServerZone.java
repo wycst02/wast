@@ -5,9 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * @Author: wangy
- * @Date: 2020/8/25 15:34
- * @Description:
+ * @author wangy
+ * @since 2020/8/25 15:34
  */
 public class ServerZone {
 

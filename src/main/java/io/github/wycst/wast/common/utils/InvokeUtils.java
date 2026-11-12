@@ -4,8 +4,8 @@ import io.github.wycst.wast.common.reflect.GetterInfo;
 import io.github.wycst.wast.common.reflect.SetterInfo;
 
 /**
- * @Date 2024/7/30 19:39
- * @Created by wangyc
+ * @since 2024/7/30 19:39
+ * @author wangyc
  */
 abstract class InvokeUtils {
     final static UtilsSecureTrustedAccess TRUSTED_ACCESS = new UtilsSecureTrustedAccess();

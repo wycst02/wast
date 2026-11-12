@@ -9,9 +9,8 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 
 /**
- * @Author: wangy
- * @Date: 2021/8/22 18:32
- * @Description:
+ * @author wangy
+ * @since 2021/8/22 18:32
  */
 public class LoggerManagerHandler {
 

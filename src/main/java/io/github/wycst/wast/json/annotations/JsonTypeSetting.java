@@ -8,8 +8,8 @@ import java.lang.annotation.Target;
 /**
  * json type setting
  *
- * @Date 2024/3/24 16:10
- * @Created by wangyc
+ * @since 2024/3/24 16:10
+ * @author wangyc
  * @since 0.0.11
  */
 @Target({ElementType.TYPE})

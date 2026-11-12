@@ -5,7 +5,7 @@ import java.util.Date;
 /**
  * 反解的id信息
  *
- * @Author: wangyunchao
+ * @author wangyunchao
  * @Modify by:
  */
 public class IdInfo {

@@ -9,9 +9,8 @@ import java.util.Random;
 /**
  * 负载均衡随机策略
  *
- * @Author: wangy
- * @Date: 2020/8/25 14:30
- * @Description:
+ * @author wangy
+ * @since 2020/8/25 14:30
  */
 public class RandomLoadBalanceStrategy extends AbstractLoadBalanceStrategy {
 

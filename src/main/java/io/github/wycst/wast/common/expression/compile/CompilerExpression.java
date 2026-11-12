@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * @Author wangyunchao
- * @Date 2021/11/19 18:39
+ * @author wangyunchao
+ * @since 2021/11/19 18:39
  */
 public abstract class CompilerExpression extends Expression {
 

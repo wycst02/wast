@@ -21,9 +21,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/4 10:41
- * @Description:
+ * @author wangy
+ * @since 2020/7/4 10:41
  */
 public class UrlHttpClientExecutor extends AbstractUrlHttpClientExecutor {
 

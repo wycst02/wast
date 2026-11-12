@@ -3,9 +3,8 @@ package io.github.wycst.wast.jdbc.dialect;
 /**
  * gbase supported
  *
- * @Author: wangy
- * @Date: 2023/2/27 21:19
- * @Description:
+ * @author wangy
+ * @since 2023/2/27 21:19
  */
 public class GbaseDialect extends DialectImpl implements Dialect {
 

@@ -12,8 +12,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * @Author: wangy
- * @Description:
+ * @author wangy
  */
 public class JSONPojoFieldSerializer {
     final JSONStore store;

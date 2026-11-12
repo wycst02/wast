@@ -1,9 +1,8 @@
 package io.github.wycst.wast.jdbc.executer;
 
 /**
- * @Author: wangy
- * @Date: 2021/2/17 16:14
- * @Description:
+ * @author wangy
+ * @since 2021/2/17 16:14
  */
 public class FieldOrder {
 

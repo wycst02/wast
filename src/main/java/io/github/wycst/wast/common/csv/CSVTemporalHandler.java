@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 /**
- * @Date 2024/1/12 10:08
- * @Created by wangyc
+ * @since 2024/1/12 10:08
+ * @author wangyc
  */
 public interface CSVTemporalHandler {
 

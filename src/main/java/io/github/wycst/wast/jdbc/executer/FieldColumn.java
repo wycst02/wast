@@ -15,9 +15,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @Author: wangy
- * @Date: 2021/2/15 16:24
- * @Description:
+ * @author wangy
+ * @since 2021/2/15 16:24
  */
 public class FieldColumn {
 

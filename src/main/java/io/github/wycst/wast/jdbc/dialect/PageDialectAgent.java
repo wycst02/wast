@@ -1,9 +1,8 @@
 package io.github.wycst.wast.jdbc.dialect;
 
 /**
- * @Author: wangy
- * @Date: 2023/2/28 22:14
- * @Description:
+ * @author wangy
+ * @since 2023/2/28 22:14
  */
 public interface PageDialectAgent {
 

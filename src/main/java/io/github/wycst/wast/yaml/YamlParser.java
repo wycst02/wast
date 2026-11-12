@@ -3,9 +3,8 @@ package io.github.wycst.wast.yaml;
 import java.util.List;
 
 /**
- * @Author: wangy
- * @Date: 2022/5/22 9:28
- * @Description:
+ * @author wangy
+ * @since 2022/5/22 9:28
  */
 class YamlParser extends YamlGeneral {
 

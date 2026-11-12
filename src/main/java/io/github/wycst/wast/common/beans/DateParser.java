@@ -3,8 +3,8 @@ package io.github.wycst.wast.common.beans;
 /**
  * java日期类转化
  *
- * @Author wangyunchao
- * @Date 2022/12/4 22:08
+ * @author wangyunchao
+ * @since 2022/12/4 22:08
  */
 public class DateParser {
 

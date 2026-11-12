@@ -13,9 +13,8 @@ import java.util.Map;
 /**
  * 内置函数
  *
- * @Author: wangy
- * @Date: 2021/11/30 22:48
- * @Description:
+ * @author wangy
+ * @since 2021/11/30 22:48
  */
 public final class BuiltInFunction {
 

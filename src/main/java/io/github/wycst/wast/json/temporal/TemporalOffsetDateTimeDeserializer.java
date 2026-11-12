@@ -10,8 +10,7 @@ import java.time.temporal.Temporal;
 /**
  * 和ZonedDateTime实现相似
  *
- * @Date
- * @Created by wycst
+ * @author wycst
  */
 public final class TemporalOffsetDateTimeDeserializer extends TemporalZonedDateTimeDeserializer {
     public TemporalOffsetDateTimeDeserializer(TemporalConfig temporalConfig) {

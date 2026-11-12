@@ -1,8 +1,8 @@
 package io.github.wycst.wast.common.utils;
 
 /**
- * @Date 2024/5/24 18:16
- * @Created by wangyc
+ * @since 2024/5/24 18:16
+ * @author wangyc
  */
 class ED {
 

@@ -11,9 +11,8 @@ import java.net.URL;
 import java.util.Map;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/2 19:13
- * @Description:
+ * @author wangy
+ * @since 2020/7/2 19:13
  */
 class HttpClientRequestImpl implements HttpClientRequest {
 

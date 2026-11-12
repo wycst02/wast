@@ -5,9 +5,8 @@ import io.github.wycst.wast.json.annotations.JsonProperty;
 /**
  * 字段定义，@JsonProperty注解的编码实现
  *
- * @Author: wangy
- * @Description: 字段定义
- * @Date: 2026/1/23 16:05
+ * @author wangy
+ * @since 2026/1/23 16:05
  * @see JsonProperty
  */
 public class JSONPropertyDefinition {

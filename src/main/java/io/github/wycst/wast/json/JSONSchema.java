@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  * <p>
  * JSON 字段定义/校验, 绑定JSONNode实现.
  *
- * @Author: wangy
+ * @author wangy
  */
 public final class JSONSchema extends JSONSchemaBase implements Serializable {
 

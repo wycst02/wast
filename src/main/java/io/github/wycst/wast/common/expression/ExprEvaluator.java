@@ -28,8 +28,8 @@ import java.util.List;
 /**
  * 常量、变量、操作执行器
  *
- * @Author wangyunchao
- * @Date 2022/10/20 12:37
+ * @author wangyunchao
+ * @since 2022/10/20 12:37
  */
 public class ExprEvaluator {
 

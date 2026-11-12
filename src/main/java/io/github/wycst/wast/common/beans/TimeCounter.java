@@ -1,8 +1,8 @@
 package io.github.wycst.wast.common.beans;
 
 /**
- * @Date 2024/12/12 23:07
- * @Created by wangyc
+ * @since 2024/12/12 23:07
+ * @author wangyc
  */
 public final class TimeCounter {
 

@@ -1,9 +1,8 @@
 package io.github.wycst.wast.jdbc.exception;
 
 /**
- * @Author: wangy
- * @Date: 2021/2/24 21:53
- * @Description:
+ * @author wangy
+ * @since 2021/2/24 21:53
  */
 public class SqlExecuteException extends RuntimeException {
 

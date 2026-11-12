@@ -18,9 +18,8 @@ import java.time.LocalDateTime;
  * <p>
  * Localtime, localdate, localdatetime do not consider time zone
  *
- * @Author: wangy
- * @Date: 2022/8/13 15:08
- * @Description:
+ * @author wangy
+ * @since 2022/8/13 15:08
  */
 @SuppressWarnings({"all"})
 public abstract class JSONTemporalDeserializer extends JSONTypeDeserializer {

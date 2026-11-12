@@ -11,8 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 解决多层泛型类型解析
  *
- * @Author wangyunchao
- * @Date 2021/12/30 10:34
+ * @author wangyunchao
+ * @since 2021/12/30 10:34
  */
 public final class GenericParameterizedType<T> {
 

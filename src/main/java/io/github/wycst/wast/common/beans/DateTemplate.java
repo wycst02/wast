@@ -23,8 +23,7 @@ import java.util.TimeZone;
  * <p>
  * 例如，pattern yyyy-MM-dd HH:mm:ss 能兼容2022-2-3 11:12:6和2022-02-03 11:12:06
  *
- * @Author: wangy
- * @Description:
+ * @author wangy
  * @see java.text.SimpleDateFormat#parse(String)
  */
 public final class DateTemplate {

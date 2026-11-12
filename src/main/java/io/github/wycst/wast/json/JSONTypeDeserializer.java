@@ -17,9 +17,8 @@ import java.util.*;
 /**
  * 类型反序列器
  *
- * @Author: wangy
- * @Date: 2022/6/18 5:59
- * @Description:
+ * @author wangy
+ * @since 2022/6/18 5:59
  */
 @SuppressWarnings({"all"})
 public abstract class JSONTypeDeserializer {

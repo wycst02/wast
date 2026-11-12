@@ -8,9 +8,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/7 19:40
- * @Description:
+ * @author wangy
+ * @since 2020/7/7 19:40
  */
 abstract class AbstractHttpClientResponse implements HttpClientResponse {
 

@@ -3,9 +3,8 @@ package io.github.wycst.wast.common.utils;
 import java.util.Arrays;
 
 /**
- * @Author: wangy(wycst)
- * @Date: 2022/7/17 16:16
- * @Description:
+ * @author wangy(wycst)
+ * @since 2022/7/17 16:16
  */
 public final class NumberUtils {
 

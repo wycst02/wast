@@ -16,9 +16,8 @@ import java.util.TimeZone;
  * <p> 请谨慎调用，真的不安全！
  * <p> 内部使用
  *
- * @Author: wangy
- * @Date: 2022/6/12
- * @Description:
+ * @author wangy
+ * @since 2022/6/12
  */
 public final class UnsafeHelper {
 

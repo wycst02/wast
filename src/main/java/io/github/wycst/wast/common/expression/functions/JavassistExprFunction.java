@@ -9,9 +9,8 @@ import java.lang.reflect.Type;
 /**
  * Compatibility processing of functions for javassist
  *
- * @Author: wangy
- * @Date: 2022/11/14 21:31
- * @Description:
+ * @author wangy
+ * @since 2022/11/14 21:31
  */
 public abstract class JavassistExprFunction<I, O> implements ExprFunction {
 

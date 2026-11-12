@@ -11,9 +11,8 @@ import java.net.HttpURLConnection;
 import java.security.SecureRandom;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/7 19:16
- * @Description:
+ * @author wangy
+ * @since 2020/7/7 19:16
  */
 abstract class AbstractUrlHttpClientExecutor extends HttpClientExecutor {
 

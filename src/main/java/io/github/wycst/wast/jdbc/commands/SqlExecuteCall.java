@@ -4,9 +4,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * @Author: wangy
- * @Date: 2021/2/14 18:21
- * @Description:
+ * @author wangy
+ * @since 2021/2/14 18:21
  */
 public interface SqlExecuteCall<T> {
 

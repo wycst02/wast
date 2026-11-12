@@ -11,9 +11,8 @@ import java.util.zip.ZipOutputStream;
 /**
  * 自动构建配置
  *
- * @Author: wangy
- * @Date: 2021/9/2 0:04
- * @Description:
+ * @author wangy
+ * @since 2021/9/2 0:04
  */
 public class GeneratorContext {
 

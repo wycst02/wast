@@ -3,8 +3,8 @@ package io.github.wycst.wast.clients.http.exception;
 import io.github.wycst.wast.clients.http.definition.HttpClientException;
 
 /**
- * @Author wangyunchao
- * @Date 2021/10/15 15:15
+ * @author wangyunchao
+ * @since 2021/10/15 15:15
  */
 public class ConnectException extends HttpClientException {
 

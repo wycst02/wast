@@ -13,8 +13,8 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 /**
- * @Author wangyunchao
- * @Date 2022/12/3 12:59
+ * @author wangyunchao
+ * @since 2022/12/3 12:59
  */
 public class EntityManagementFactory {
 

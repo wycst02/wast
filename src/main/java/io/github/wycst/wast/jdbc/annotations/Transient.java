@@ -6,9 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * 忽略映射标记
  *
- * @Author: wangy
- * @Date: 2021/2/15 16:54
- * @Description:
+ * @author wangy
+ * @since 2021/2/15 16:54
  */
 @java.lang.annotation.Target(value = {ElementType.FIELD, ElementType.METHOD})
 @java.lang.annotation.Retention(value = RetentionPolicy.RUNTIME)

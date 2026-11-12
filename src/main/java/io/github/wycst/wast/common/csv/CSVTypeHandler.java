@@ -3,8 +3,8 @@ package io.github.wycst.wast.common.csv;
 import io.github.wycst.wast.common.utils.ObjectUtils;
 
 /**
- * @Date 2024/1/12 9:21
- * @Created by wangyc
+ * @since 2024/1/12 9:21
+ * @author wangyc
  */
 public abstract class CSVTypeHandler<T> {
 

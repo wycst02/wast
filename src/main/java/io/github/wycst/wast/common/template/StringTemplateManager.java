@@ -8,9 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 模板管理
  *
- * @Author: wangy
- * @Date: 2021/9/21 17:39
- * @Description:
+ * @author wangy
+ * @since 2021/9/21 17:39
  */
 public class StringTemplateManager {
 

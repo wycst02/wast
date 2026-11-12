@@ -9,8 +9,8 @@ import java.sql.SQLException;
 import java.util.Iterator;
 
 /**
- * @Author wangyunchao
- * @Date 2021/8/27 17:19
+ * @author wangyunchao
+ * @since 2021/8/27 17:19
  */
 public class ResultSetIterator<E> implements Iterator {
 

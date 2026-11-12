@@ -22,9 +22,8 @@ import java.util.regex.Pattern;
  *
  * <p> 当前仅仅内部orm进行代码自动生成模块使用，性能未做优化
  *
- * @Author: wangy
- * @Date: 2021/9/7 21:53
- * @Description:
+ * @author wangy
+ * @since 2021/9/7 21:53
  */
 public final class StringTemplate {
 

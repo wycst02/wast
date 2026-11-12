@@ -49,9 +49,8 @@ import java.util.TimeZone;
  *
  * </pre>
  *
- * @Author: wangy
- * @Date: 2022/8/11 22:53
- * @Description:
+ * @author wangy
+ * @since 2022/8/11 22:53
  */
 public class GeneralDate {
     // 最小时间：公元元年时间（0001-01-01 00:00:00.000）

@@ -21,9 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * ZonedDateTime反序列化
  *
- * @Author: wangy
- * @Date: 2022/8/13 15:06
- * @Description:
+ * @author wangy
+ * @since 2022/8/13 15:06
  */
 public class TemporalZonedDateTimeDeserializer extends JSONTemporalDeserializer {
 

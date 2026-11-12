@@ -1,8 +1,8 @@
 package io.github.wycst.wast.json;
 
 /**
- * @Date 2024/10/20 22:41
- * @Created by wangyc
+ * @since 2024/10/20 22:41
+ * @author wangyc
  */
 final class JSONNodePathCtx {
 

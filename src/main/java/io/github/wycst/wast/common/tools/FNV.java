@@ -3,8 +3,8 @@ package io.github.wycst.wast.common.tools;
 /**
  * FNV-1a Hash
  *
- * @Author wangyunchao
- * @Date 2023/5/18 21:38
+ * @author wangyunchao
+ * @since 2023/5/18 21:38
  */
 public class FNV {
     public static final long FNV_64_OFFSET_BASIS = 0xcbf29ce484222325L;

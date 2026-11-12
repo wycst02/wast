@@ -31,8 +31,8 @@ import java.util.regex.Pattern;
  * <li> '*BC*[SDA' :  仅仅支持对象节点查找,且精确匹配*BC*[SDA；</li>
  * <h4>路径后面统一支持过滤表达式使用中括号环绕，表达式语法参考Expression</h4>
  *
- * @Date 2024/10/10 22:17
- * @Created by wangyc
+ * @since 2024/10/10 22:17
+ * @author wangyc
  * @see Expression
  */
 public abstract class JSONNodePathCollector {

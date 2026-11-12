@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 属性反序列化模型
  *
- * @Author wangyunchao
+ * @author wangyunchao
  */
 public final class JSONPojoFieldDeserializer extends JSONTypeDeserializer implements Comparable<JSONPojoFieldDeserializer> {
     final JSONStore store;

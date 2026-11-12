@@ -10,9 +10,8 @@ import java.util.Map;
 /**
  * 面向对象查询执行器
  *
- * @Author: wangy
- * @Date: 2020/6/29 17:44
- * @Description:
+ * @author wangy
+ * @since 2020/6/29 17:44
  */
 public interface OqlExecuter {
 

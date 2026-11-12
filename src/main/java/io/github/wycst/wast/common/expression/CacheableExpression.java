@@ -6,8 +6,8 @@ import io.github.wycst.wast.common.utils.ObjectUtils;
 /**
  * 支持缓存的表达式API(一般不推荐使用，仅仅与某些带缓存的库进行性能测试比较实用，实际生产没有必要缓存)
  *
- * @Date 2024/10/22 20:34
- * @Created by wangyc
+ * @since 2024/10/22 20:34
+ * @author wangyc
  */
 public final class CacheableExpression {
 

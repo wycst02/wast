@@ -3,9 +3,8 @@ package io.github.wycst.wast.jdbc.executer;
 /**
  * sql查询配置属性
  *
- * @Author: wangy
- * @Date: 2021/8/6 23:19
- * @Description:
+ * @author wangy
+ * @since 2021/8/6 23:19
  */
 public class SqlExecuterProperties {
 

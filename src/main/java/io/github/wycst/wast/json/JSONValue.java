@@ -6,8 +6,8 @@ import java.util.Map;
 /**
  * JSON字符串中value可选类型约定为6种: String, Number, boolean, Map, List,null， 除了null外都可以使用valueOf进行显示类型的构造；
  *
- * @Date 2024/8/2 23:46
- * @Created by wangyc
+ * @since 2024/8/2 23:46
+ * @author wangyc
  */
 public final class JSONValue<T> {
 

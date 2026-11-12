@@ -4,9 +4,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @Author: wangy
- * @Date: 2021/8/9 22:42
- * @Description:
+ * @author wangy
+ * @since 2021/8/9 22:42
  */
 public final class ExecutorServiceUtils {
 

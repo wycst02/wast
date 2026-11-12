@@ -8,8 +8,8 @@ import java.sql.ResultSetMetaData;
 import java.util.Iterator;
 
 /**
- * @Author wangyunchao
- * @Date 2021/8/27 17:57
+ * @author wangyunchao
+ * @since 2021/8/27 17:57
  */
 public class StreamCursorImpl<E> implements StreamCursor {
 

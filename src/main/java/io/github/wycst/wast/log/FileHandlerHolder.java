@@ -7,8 +7,8 @@ import java.util.logging.Level;
 /**
  * 日志文件handler
  *
- * @Author wangyunchao
- * @Date 2021/8/26 16:53
+ * @author wangyunchao
+ * @since 2021/8/26 16:53
  */
 public class FileHandlerHolder {
 

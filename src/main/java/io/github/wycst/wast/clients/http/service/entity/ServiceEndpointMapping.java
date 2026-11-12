@@ -5,9 +5,8 @@
 //import java.lang.annotation.Annotation;
 //
 /// **
-// * @Author: wangy
-// * @Date: 2021/8/15 8:50
-// * @Description:
+// * @author wangy
+// * @since 2021/8/15 8:50
 // */
 //public class ServiceEndpointMapping {
 //

@@ -3,9 +3,8 @@ package io.github.wycst.wast.clients.http.provider;
 import java.net.URL;
 
 /**
- * @Author: wangy
- * @Date: 2021/8/8 1:12
- * @Description:
+ * @author wangy
+ * @since 2021/8/8 1:12
  */
 public class RequestServiceInstance {
 

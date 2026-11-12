@@ -5,8 +5,8 @@ import io.github.wycst.wast.common.utils.EnvUtils;
 /**
  * quickly find APIs using mask
  *
- * @Date 2024/6/14 19:08
- * @Created by wangyc
+ * @since 2024/6/14 19:08
+ * @author wangyc
  */
 public class JSONUtil {
 

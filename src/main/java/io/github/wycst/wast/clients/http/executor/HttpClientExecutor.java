@@ -18,9 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/4 10:11
- * @Description:
+ * @author wangy
+ * @since 2020/7/4 10:11
  */
 public abstract class HttpClientExecutor {
 

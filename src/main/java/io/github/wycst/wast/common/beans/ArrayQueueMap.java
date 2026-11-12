@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p> 固定长度的队列Map,先进先出
  *
  * @since  2024/10/22 18:29
- * @author  by wangyc
+ * @author wangyc
  */
 public final class ArrayQueueMap<K, V> {
 

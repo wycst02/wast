@@ -3,9 +3,8 @@ package io.github.wycst.wast.log;
 import java.util.logging.LogRecord;
 
 /**
- * @Author: wangy
- * @Date: 2020/5/6 20:08
- * @Description:
+ * @author wangy
+ * @since 2020/5/6 20:08
  */
 public class ConsoleFormatter extends TextFormatter {
 

@@ -1,8 +1,8 @@
 package io.github.wycst.wast.clients.http.provider.consul;
 
 /**
- * @Author wangyunchao
- * @Date 2023/4/22 13:50
+ * @author wangyunchao
+ * @since 2023/4/22 13:50
  */
 public class ServiceInfo {
 

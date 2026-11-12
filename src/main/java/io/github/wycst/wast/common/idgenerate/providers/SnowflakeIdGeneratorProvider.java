@@ -9,7 +9,7 @@ import java.util.Date;
 /**
  * 雪花算法实现 Snowflake
  *
- * @Author: wangyunchao
+ * @author wangyunchao
  * @Modify by:
  */
 class SnowflakeIdGeneratorProvider extends IdGenerator {

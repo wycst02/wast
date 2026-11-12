@@ -11,8 +11,7 @@ import java.time.YearMonth;
 /**
  * YearMonth序列化
  *
- * @Author: wangy
- * @Description:
+ * @author wangy
  * @see GregorianDate
  * @see io.github.wycst.wast.common.beans.DateTemplate
  */

@@ -8,9 +8,8 @@ import java.util.Map;
 /**
  * 变量模型处理工具
  *
- * @Author: wangy
- * @Date: 2022/10/30 0:37
- * @Description:
+ * @author wangy
+ * @since 2022/10/30 0:37
  */
 public final class ElVariableUtils {
 

@@ -6,8 +6,7 @@ import java.io.InputStream;
 /**
  * byte工具类
  *
- * @Author: wangy
- * @Description:
+ * @author wangy
  */
 public final class ByteUtils {
 

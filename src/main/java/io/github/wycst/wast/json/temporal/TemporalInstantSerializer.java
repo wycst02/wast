@@ -10,9 +10,8 @@ import java.util.TimeZone;
 /**
  * Instant序列化
  *
- * @Author: wangy
- * @Date: 2022/8/13 15:06
- * @Description:
+ * @author wangy
+ * @since 2022/8/13 15:06
  * @see GregorianDate
  * @see io.github.wycst.wast.common.beans.DateTemplate
  */

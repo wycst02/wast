@@ -6,9 +6,8 @@ package io.github.wycst.wast.json;
  * <P> 定义在属性上的注解，只对当前注解属性字段生效不会影响全局的类型使用；</p>
  * <p> 也可以用于JSON(或JSONInstance)针对指定类型进行全局注册（singleton()强制true）</p>
  *
- * @Author: wangy
- * @Description:
- * @Date: 2026/1/23 16:05
+ * @author wangy
+ * @since 2026/1/23 16:05
  **/
 public abstract class JSONTypeFieldMapper<E> implements JSONTypeMapper<E> {
 

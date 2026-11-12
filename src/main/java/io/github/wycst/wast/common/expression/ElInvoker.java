@@ -3,9 +3,8 @@ package io.github.wycst.wast.common.expression;
 import java.util.Map;
 
 /**
- * @Author: wangy
- * @Date: 2022/10/30 11:24
- * @Description:
+ * @author wangy
+ * @since 2022/10/30 11:24
  */
 public interface ElInvoker {
 

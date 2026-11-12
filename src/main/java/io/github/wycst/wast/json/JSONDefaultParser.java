@@ -30,8 +30,8 @@ import java.util.Map;
  * <p> 默认解析器，根据字符的开头前缀解析为Map、List、String
  * <p> 去掉类型check问题，理论上最快。
  *
- * @Author wangyunchao
- * @Date 2022/5/31 21:28
+ * @author wangyunchao
+ * @since 2022/5/31 21:28
  */
 @SuppressWarnings({"all"})
 final class JSONDefaultParser {

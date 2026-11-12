@@ -7,9 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @Author: wangy
- * @Date: 2020/8/25 15:16
- * @Description:
+ * @author wangy
+ * @since 2020/8/25 15:16
  */
 public abstract class AbstractLoadBalanceStrategy implements LoadBalanceStrategy {
 

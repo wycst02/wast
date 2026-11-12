@@ -10,9 +10,8 @@ import java.lang.annotation.Target;
  * 查询时fetch可以控制是否加载关联的实体或实体集合
  * 删除时cascade可以控制是否要级联删除的实体或者实体集合
  *
- * @Author: wangy
- * @Date: 2021/8/5 09:36
- * @Description:
+ * @author wangy
+ * @since 2021/8/5 09:36
  */
 @Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)

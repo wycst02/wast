@@ -11,9 +11,8 @@ import java.util.Set;
 /**
  * 实体bean相关工具类
  *
- * @Author: wangy
- * @Date: 2019/12/7 11:48
- * @Description:
+ * @author wangy
+ * @since 2019/12/7 11:48
  */
 public final class BeanUtils extends InvokeUtils {
 

@@ -11,9 +11,8 @@ import java.util.Map;
 /**
  * sql帮助api
  *
- * @Author: wangy
- * @Date: 2021/2/14 17:16
- * @Description:
+ * @author wangy
+ * @since 2021/2/14 17:16
  */
 public class SqlHelper {
 

@@ -5,9 +5,8 @@ import java.net.URL;
 import java.util.Map;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/2 16:38
- * @Description:
+ * @author wangy
+ * @since 2020/7/2 16:38
  */
 public interface HttpClientRequest {
 

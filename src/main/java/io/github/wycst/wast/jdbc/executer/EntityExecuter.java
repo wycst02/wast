@@ -17,8 +17,8 @@ import java.util.*;
 /**
  * 实体类执行器
  *
- * @Author wangyunchao
- * @Date 2022/12/3 12:24
+ * @author wangyunchao
+ * @since 2022/12/3 12:24
  */
 public final class EntityExecuter implements OqlExecuter {
 

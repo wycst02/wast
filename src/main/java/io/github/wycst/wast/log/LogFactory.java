@@ -7,9 +7,8 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 
 /**
- * @Author: wangy
- * @Date: 2020/5/5 15:46
- * @Description:
+ * @author wangy
+ * @since 2020/5/5 15:46
  */
 public class LogFactory {
 

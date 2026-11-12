@@ -10,9 +10,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/2 16:38
- * @Description:
+ * @author wangy
+ * @since 2020/7/2 16:38
  */
 public interface HttpClientResponse {
 

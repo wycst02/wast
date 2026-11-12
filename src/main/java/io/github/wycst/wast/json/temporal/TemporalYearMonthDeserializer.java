@@ -15,8 +15,7 @@ import java.time.YearMonth;
 /**
  * YearMonth反序列化
  *
- * @Author: wangy
- * @Description:
+ * @author wangy
  * @see GregorianDate
  * @see DateTemplate
  */

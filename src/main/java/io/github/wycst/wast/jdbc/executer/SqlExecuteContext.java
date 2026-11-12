@@ -1,8 +1,8 @@
 package io.github.wycst.wast.jdbc.executer;
 
 /**
- * @Date 2024/12/13 20:02
- * @Created by wangyc
+ * @since 2024/12/13 20:02
+ * @author wangyc
  */
 public final class SqlExecuteContext {
 

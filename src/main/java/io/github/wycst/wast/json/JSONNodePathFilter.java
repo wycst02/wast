@@ -12,8 +12,8 @@ import java.util.Map;
  * <p>
  * 属性级别过滤器(一般针对object类型的节点)
  *
- * @Date 2024/10/10 22:17
- * @Created by wangyc
+ * @since 2024/10/10 22:17
+ * @author wangyc
  */
 public abstract class JSONNodePathFilter {
 

@@ -6,8 +6,8 @@ import java.util.Map;
 /**
  * 实体和表结构（正向和逆向数据载体）
  *
- * @Author wangyunchao
- * @Date 2021/9/3 17:34
+ * @author wangyunchao
+ * @since 2021/9/3 17:34
  */
 public class GeneratorTable {
 

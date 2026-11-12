@@ -21,8 +21,8 @@ import java.sql.Time;
 import java.util.*;
 
 /**
- * @Author wangyunchao
- * @Date 2021/12/7 19:30
+ * @author wangyunchao
+ * @since 2021/12/7 19:30
  */
 @SuppressWarnings({"all"})
 public final class JSONGeneral {

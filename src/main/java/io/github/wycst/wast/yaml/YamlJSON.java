@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <br> {}解析为Map实例, []解析为List实例
  * <br> 可以作为常用json解析,由于没有类型处理一般比常规的JSON解析反而快；
  *
- * @Author wangyunchao
+ * @author wangyunchao
  */
 public class YamlJSON extends YamlGeneral {
 

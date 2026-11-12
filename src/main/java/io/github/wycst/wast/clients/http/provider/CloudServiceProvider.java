@@ -10,8 +10,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @Author wangyunchao
- * @Date 2023/4/20 21:35
+ * @author wangyunchao
+ * @since 2023/4/20 21:35
  */
 public abstract class CloudServiceProvider extends DefaultServiceProvider {
 

@@ -33,9 +33,8 @@ import java.util.*;
  * yaml 节点树模型
  * 行单位解析
  *
- * @Author: wangy
- * @Date: 2022/3/27 17:57
- * @Description:
+ * @author wangy
+ * @since 2022/3/27 17:57
  */
 public class YamlNode extends YamlLine {
 

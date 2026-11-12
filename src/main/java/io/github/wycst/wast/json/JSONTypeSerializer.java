@@ -15,9 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * @Author: wangy
- * @Date: 2022/6/18 5:59
- * @Description:
+ * @author wangy
+ * @since 2022/6/18 5:59
  */
 @SuppressWarnings({"all"})
 public abstract class JSONTypeSerializer {

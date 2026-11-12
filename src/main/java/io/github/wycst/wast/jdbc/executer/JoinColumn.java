@@ -3,9 +3,8 @@ package io.github.wycst.wast.jdbc.executer;
 import io.github.wycst.wast.jdbc.annotations.JoinField;
 
 /**
- * @Author: wangy
- * @Date: 2021/7/25 21:35
- * @Description:
+ * @author wangy
+ * @since 2021/7/25 21:35
  */
 public class JoinColumn {
 

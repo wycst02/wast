@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * <p> 提供更方便的类型拓展注册机制;
  *
- * @Created by wangyc
+ * @author wangyc
  */
 public interface JSONTypeMapper<T> {
 

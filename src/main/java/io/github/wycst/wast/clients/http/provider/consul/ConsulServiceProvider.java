@@ -12,8 +12,8 @@ import io.github.wycst.wast.log.LogFactory;
 import java.util.*;
 
 /**
- * @Author wangyunchao
- * @Date 2023/4/20 21:32
+ * @author wangyunchao
+ * @since 2023/4/20 21:32
  */
 public class ConsulServiceProvider extends CloudServiceProvider {
 

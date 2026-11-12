@@ -1,9 +1,8 @@
 package io.github.wycst.wast.common.expression.compile;
 
 /**
- * @Author: wangy
- * @Date: 2022/11/13 21:19
- * @Description:
+ * @author wangy
+ * @since 2022/11/13 21:19
  */
 public class ValueHolder {
     public Object value;

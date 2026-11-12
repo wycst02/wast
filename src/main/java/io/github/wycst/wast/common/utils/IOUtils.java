@@ -7,8 +7,8 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 
 /**
- * @Author wangyunchao
- * @Date 2022/9/16 12:11
+ * @author wangyunchao
+ * @since 2022/9/16 12:11
  */
 public final class IOUtils {
 

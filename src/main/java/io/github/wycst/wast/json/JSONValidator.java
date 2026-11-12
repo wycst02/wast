@@ -10,9 +10,8 @@ import java.util.Arrays;
  * json校验
  * （通常情况下只要JSON格式错误，解析一定会抛出异常，但通过异常来判定影响性能，拷贝的解析的代码然后做了修改）
  *
- * @Author: wangy
- * @Date: 2022/6/3 20:01
- * @Description:
+ * @author wangy
+ * @since 2022/6/3 20:01
  */
 final class JSONValidator {
 

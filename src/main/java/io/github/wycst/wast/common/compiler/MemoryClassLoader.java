@@ -1,9 +1,8 @@
 package io.github.wycst.wast.common.compiler;
 
 /**
- * @Author: wangy
- * @Date: 2021/9/21 0:17
- * @Description:
+ * @author wangy
+ * @since 2021/9/21 0:17
  */
 public class MemoryClassLoader extends ClassLoader {
 

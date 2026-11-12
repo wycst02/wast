@@ -1,8 +1,8 @@
 package io.github.wycst.wast.yaml;
 
 /**
- * @Author wangyunchao
- * @Date 2022/5/20 15:14
+ * @author wangyunchao
+ * @since 2022/5/20 15:14
  */
 public class YamlParseException extends RuntimeException {
 

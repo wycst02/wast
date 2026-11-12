@@ -6,9 +6,8 @@ import java.sql.*;
 import java.util.Date;
 
 /**
- * @Author: wangy
- * @Date: 2021/8/21 21:08
- * @Description:
+ * @author wangy
+ * @since 2021/8/21 21:08
  */
 public abstract class DialectImpl implements Dialect {
 

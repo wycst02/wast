@@ -7,9 +7,8 @@ import java.sql.Timestamp;
 import java.util.Date;
 
 /**
- * @Author: wangy
- * @Date: 2021/2/21 19:00
- * @Description:
+ * @author wangy
+ * @since 2021/2/21 19:00
  */
 public class ClickHouseDialect extends MySqlDialect {
 

@@ -23,9 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 类型反序列化器缓存： deserializerMap
  * 动态创建：根据类型动态创建相应的序列化器和反序列化器
  *
- * @Author: wangy
- * @Date: 2025/12/29 21:05
- * @Description:
+ * @author wangy
+ * @since 2025/12/29 21:05
  */
 @SuppressWarnings({"all"})
 final class JSONStore {

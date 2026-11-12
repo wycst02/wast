@@ -3,9 +3,8 @@ package io.github.wycst.wast.clients.http.provider.nacos;
 import java.util.List;
 
 /**
- * @Author: wangy
- * @Date: 2021/8/7 19:22
- * @Description:
+ * @author wangy
+ * @since 2021/8/7 19:22
  */
 public class ServiceListResponse {
 

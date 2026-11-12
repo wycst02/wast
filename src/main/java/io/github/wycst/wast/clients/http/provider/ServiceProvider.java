@@ -7,9 +7,8 @@ import java.net.MalformedURLException;
 import java.util.Collection;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/10 15:05
- * @Description:
+ * @author wangy
+ * @since 2020/7/10 15:05
  */
 public interface ServiceProvider {
 

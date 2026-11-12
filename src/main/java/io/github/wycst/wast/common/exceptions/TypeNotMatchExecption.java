@@ -1,9 +1,8 @@
 package io.github.wycst.wast.common.exceptions;
 
 /**
- * @Author: wangy
- * @Date: 2021/9/9 23:30
- * @Description:
+ * @author wangy
+ * @since 2021/9/9 23:30
  */
 public class TypeNotMatchExecption extends RuntimeException {
 

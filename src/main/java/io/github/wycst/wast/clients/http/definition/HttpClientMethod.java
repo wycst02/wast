@@ -1,9 +1,8 @@
 package io.github.wycst.wast.clients.http.definition;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/2 16:51
- * @Description:
+ * @author wangy
+ * @since 2020/7/2 16:51
  */
 public enum HttpClientMethod {
 

@@ -17,8 +17,8 @@ import java.util.*;
 /**
  * 基于数据库的代码生成器
  *
- * @Author wangyunchao
- * @Date 2021/9/3 17:32
+ * @author wangyunchao
+ * @since 2021/9/3 17:32
  */
 public class CodeGenerator {
 
@@ -139,7 +139,7 @@ public class CodeGenerator {
         entityBuffer.append("import io.github.wycst.wast.jdbc.annotations.*;\n");
         entityBuffer.append("import io.github.wycst.wast.jdbc.annotations.Id.GenerationType;\n");
 
-        entityBuffer.append(String.format("/**\n * <p> Table: %s\n *\n * @author       %s\n * @date         %s\n */\n", tableName, author, new Date().toString()));
+        entityBuffer.append(String.format("/**\n * <p> Table: %s\n *\n * @author %s\n * @since %s\n */\n", tableName, author, new Date().toString()));
         if (useLombok) {
             entityBuffer.append("@lombok.Data\n");
         }

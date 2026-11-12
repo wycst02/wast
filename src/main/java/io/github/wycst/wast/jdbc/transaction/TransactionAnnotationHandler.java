@@ -11,9 +11,8 @@ import java.sql.SQLException;
 
 /**
  * @Transaction aop注解处理
- * @Author: wangy
- * @Date: 2019/12/8 9:53
- * @Description:
+ * @author wangy
+ * @since 2019/12/8 9:53
  */
 @AnnotationAspect(aspectType = Transaction.class, enableControlType = EnableTransaction.class)
 public class TransactionAnnotationHandler implements AnnotationHandler<Transaction, TransactionPoint> {

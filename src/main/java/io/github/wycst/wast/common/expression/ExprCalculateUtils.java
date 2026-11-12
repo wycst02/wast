@@ -4,9 +4,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 /**
- * @Author: wangy
- * @Date: 2022/10/22 13:58
- * @Description:
+ * @author wangy
+ * @since 2022/10/22 13:58
  */
 final class ExprCalculateUtils {
 

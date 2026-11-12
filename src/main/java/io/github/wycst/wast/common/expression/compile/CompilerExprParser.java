@@ -4,9 +4,8 @@ import io.github.wycst.wast.common.expression.ExprEvaluator;
 import io.github.wycst.wast.common.expression.ExprParser;
 
 /**
- * @Author: wangy
- * @Date: 2021/11/20 12:30
- * @Description:
+ * @author wangy
+ * @since 2021/11/20 12:30
  */
 public final class CompilerExprParser extends ExprParser {
 

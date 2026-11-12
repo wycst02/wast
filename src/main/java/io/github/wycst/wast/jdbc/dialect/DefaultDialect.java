@@ -3,9 +3,8 @@ package io.github.wycst.wast.jdbc.dialect;
 /**
  * 缺省方言
  *
- * @Author: wangy
- * @Date: 2023/2/27 20:14
- * @Description:
+ * @author wangy
+ * @since 2023/2/27 20:14
  */
 public class DefaultDialect extends DialectImpl implements Dialect {
 

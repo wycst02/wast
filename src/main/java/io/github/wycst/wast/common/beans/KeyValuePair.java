@@ -1,9 +1,8 @@
 package io.github.wycst.wast.common.beans;
 
 /**
- * @Author: wangy
- * @Date: 2022/11/13 10:23
- * @Description:
+ * @author wangy
+ * @since 2022/11/13 10:23
  */
 public class KeyValuePair<K, V> {
 

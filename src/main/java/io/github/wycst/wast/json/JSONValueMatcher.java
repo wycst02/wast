@@ -5,8 +5,8 @@ import java.util.Map;
 /**
  * <p> A Fast Finder </p>
  *
- * @Date 2024/4/14 8:59
- * @Created by wangyc
+ * @since 2024/4/14 8:59
+ * @author wangyc
  */
 class JSONValueMatcher<T> {
 

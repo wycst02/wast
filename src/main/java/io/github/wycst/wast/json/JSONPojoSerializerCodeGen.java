@@ -13,7 +13,7 @@ import java.util.Date;
 import java.util.UUID;
 
 /**
- * @Created by wangyc
+ * @author wangyc
  */
 @SuppressWarnings({"all"})
 final class JSONPojoSerializerCodeGen {
@@ -44,8 +44,8 @@ final class JSONPojoSerializerCodeGen {
         if (!runtime) {
             codeBuilder.append("/**\n");
             codeBuilder.append(" * pojo serializer \n");
-            codeBuilder.append(" * @Date ").append(new GregorianDate()).append("\n");
-            codeBuilder.append(" * @Created by code generator\n");
+            codeBuilder.append(" * @since ").append(new GregorianDate()).append("\n");
+            codeBuilder.append(" * @author code generator\n");
             codeBuilder.append(" */\n");
         }
         codeBuilder.append("public final class ").append(genClassName).append(" extends io.github.wycst.wast.json.JSONPojoSerializer<").append(canonicalName).append("> {\n\n");

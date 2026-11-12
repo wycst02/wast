@@ -18,8 +18,8 @@ package io.github.wycst.wast.common.expression;
  * ? :     700( ? 701, : 700)  三目运算符优先级放最低,其中:优先级高于?
  * <p>
  *
- * @Date 2024/8/24 22:35
- * @Created by wangyc
+ * @since 2024/8/24 22:35
+ * @author wangyc
  */
 public enum ElOperator {
 

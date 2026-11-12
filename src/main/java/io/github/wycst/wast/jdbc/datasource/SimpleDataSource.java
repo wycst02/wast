@@ -7,8 +7,8 @@ import java.sql.SQLException;
 /**
  * 数据库数据源（仅仅获取连接）
  *
- * @Author wangyunchao
- * @Date 2021/9/3 17:40
+ * @author wangyunchao
+ * @since 2021/9/3 17:40
  */
 public class SimpleDataSource extends AbstractDataSource {
 

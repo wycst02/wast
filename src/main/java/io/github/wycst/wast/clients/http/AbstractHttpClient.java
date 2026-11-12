@@ -21,9 +21,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 /**
- * @Author: wangy
- * @Date: 2020/8/23 20:35
- * @Description:
+ * @author wangy
+ * @since 2020/8/23 20:35
  */
 class AbstractHttpClient {
 

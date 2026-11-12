@@ -17,9 +17,8 @@ import java.util.UUID;
  * <p> JSON ByteArray writer
  * <p> Optimization of single character out of bounds check
  *
- * @Author: wangy
- * @Date: 2023/12/22 21:48
- * @Description:
+ * @author wangy
+ * @since 2023/12/22 21:48
  * @see JSON#toJsonBytes(Object, Charset, WriteOption...)
  * @see JSON#writeJsonTo(Object, OutputStream, Charset, WriteOption...)
  */

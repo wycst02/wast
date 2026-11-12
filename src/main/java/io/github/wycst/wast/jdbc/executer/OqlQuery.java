@@ -9,9 +9,8 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * @Author: wangy
- * @Date: 2021/2/16 10:34
- * @Description:
+ * @author wangy
+ * @since 2021/2/16 10:34
  */
 public class OqlQuery {
 

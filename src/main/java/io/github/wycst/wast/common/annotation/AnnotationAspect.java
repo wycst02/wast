@@ -5,9 +5,8 @@ import java.lang.annotation.*;
 /**
  * 基于注解的切面标志
  *
- * @Author: wangy
- * @Date: 2019/12/8 10:37
- * @Description:
+ * @author wangy
+ * @since 2019/12/8 10:37
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

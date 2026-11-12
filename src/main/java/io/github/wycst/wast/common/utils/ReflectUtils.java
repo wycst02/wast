@@ -9,9 +9,8 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 
 /**
- * @Author: wangy
- * @Date: 2021/2/17 22:11
- * @Description:
+ * @author wangy
+ * @since 2021/2/17 22:11
  */
 public final class ReflectUtils {
 

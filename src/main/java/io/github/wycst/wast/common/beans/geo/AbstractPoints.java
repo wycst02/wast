@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @Author wangyunchao
- * @Date 2023/5/15 22:10
+ * @author wangyunchao
+ * @since 2023/5/15 22:10
  */
 abstract class AbstractPoints extends Geometry {
 

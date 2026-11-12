@@ -8,9 +8,8 @@ import java.util.Arrays;
 /**
  * 非空行结构信息
  *
- * @Author: wangy
- * @Date: 2022/4/4 23:21
- * @Description:
+ * @author wangy
+ * @since 2022/4/4 23:21
  */
 class YamlLine extends YamlGeneral {
 

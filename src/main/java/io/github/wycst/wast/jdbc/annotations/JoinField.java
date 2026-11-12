@@ -8,9 +8,8 @@ import java.lang.annotation.Target;
 /**
  * join查询映射字段,追加join连接
  *
- * @Author: wangy
- * @Date: 2021/7/25 21:12
- * @Description:
+ * @author wangy
+ * @since 2021/7/25 21:12
  */
 @Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)

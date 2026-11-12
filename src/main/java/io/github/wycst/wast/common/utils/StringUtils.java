@@ -17,9 +17,8 @@ import java.util.regex.Pattern;
  * 字符串相关操作封装
  * 注：非极限性能优化
  *
- * @Author: wangy
- * @Date: 2019/12/7 11:12
- * @Description:
+ * @author wangy
+ * @since 2019/12/7 11:12
  */
 public final class StringUtils {
 

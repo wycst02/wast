@@ -1,8 +1,8 @@
 package io.github.wycst.wast.common.utils;
 
 /**
- * @Date 2024/5/25 13:36
- * @Created by wangyc
+ * @since 2024/5/25 13:36
+ * @author wangyc
  */
 class EF extends ED {
 

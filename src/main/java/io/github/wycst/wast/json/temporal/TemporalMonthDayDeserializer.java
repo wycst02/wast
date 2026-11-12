@@ -16,8 +16,7 @@ import java.time.MonthDay;
 /**
  * MonthDay反序列化
  *
- * @Author: wangy
- * @Description:
+ * @author wangy
  * @see GregorianDate
  * @see DateTemplate
  */

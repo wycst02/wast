@@ -3,9 +3,8 @@ package io.github.wycst.wast.jdbc.interceptor;
 import io.github.wycst.wast.jdbc.executer.SqlExecuteContext;
 
 /**
- * @Author: wangy
- * @Date: 2021/8/7 10:52
- * @Description:
+ * @author wangy
+ * @since 2021/8/7 10:52
  */
 public abstract class SqlInterceptor {
 

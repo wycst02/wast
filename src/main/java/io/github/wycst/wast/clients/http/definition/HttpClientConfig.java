@@ -13,9 +13,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/2 16:10
- * @Description:
+ * @author wangy
+ * @since 2020/7/2 16:10
  */
 @SuppressWarnings("ALL")
 public final class HttpClientConfig {

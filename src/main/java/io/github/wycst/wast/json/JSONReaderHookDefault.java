@@ -3,8 +3,8 @@ package io.github.wycst.wast.json;
 import java.util.*;
 
 /**
- * @Date 2024/10/9 14:04
- * @Created by wangyc
+ * @since 2024/10/9 14:04
+ * @author wangyc
  */
 public class JSONReaderHookDefault extends JSONReaderHook {
 

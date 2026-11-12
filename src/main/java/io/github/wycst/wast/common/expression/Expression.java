@@ -88,8 +88,8 @@ import java.util.Map;
  * <p>
  * 创建ExprFunction的子类，然后注册即可，自定义的函数名称统一以global模式生效
  *
- * @Author: wangyunchao
- * @Date: 2021/9/25 22:13
+ * @author wangyunchao
+ * @since 2021/9/25 22:13
  *
  * <p>常用api:</p>
  * @see Expression#parse(String)

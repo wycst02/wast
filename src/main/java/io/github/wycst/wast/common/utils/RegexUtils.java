@@ -10,9 +10,8 @@ import java.util.regex.Pattern;
 /**
  * 正则表达式工具类
  *
- * @Author: wangy
- * @Date: 2020/3/11 21:33
- * @Description:
+ * @author wangy
+ * @since 2020/3/11 21:33
  */
 public class RegexUtils {
 

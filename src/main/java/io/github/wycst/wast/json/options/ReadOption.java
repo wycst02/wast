@@ -3,8 +3,8 @@ package io.github.wycst.wast.json.options;
 /**
  * JSON parsing read options
  *
- * @Author: wangyunchao
- * @Date: 2021/12/26 0:44
+ * @author wangyunchao
+ * @since 2021/12/26 0:44
  */
 public enum ReadOption {
 

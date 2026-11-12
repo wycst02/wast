@@ -6,9 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Author: wangy
- * @Date: 2021/7/25 22:22
- * @Description:
+ * @author wangy
+ * @since 2021/7/25 22:22
  */
 public class JoinEntityMapping {
 

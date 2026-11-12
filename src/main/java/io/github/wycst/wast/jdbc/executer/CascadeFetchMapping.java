@@ -6,8 +6,8 @@ import io.github.wycst.wast.jdbc.annotations.CascadeFetch;
 import java.lang.reflect.Field;
 
 /**
- * @Author wangyunchao
- * @Date 2021/8/5 14:35
+ * @author wangyunchao
+ * @since 2021/8/5 14:35
  */
 public class CascadeFetchMapping {
 

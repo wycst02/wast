@@ -16,9 +16,8 @@ import java.util.UUID;
  * <p> JSON CharArray writer
  * <p> Optimization of single character out of bounds check
  *
- * @Author: wangy
- * @Date: 2021/12/22 21:48
- * @Description:
+ * @author wangy
+ * @since 2021/12/22 21:48
  */
 class JSONCharArrayWriter extends JSONWriter {
 

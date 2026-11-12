@@ -1,8 +1,8 @@
 package io.github.wycst.wast.common.utils;
 
 /**
- * @Date 2024/5/25 10:46
- * @Created by wangyc
+ * @since 2024/5/25 10:46
+ * @author wangyc
  */
 public class Scientific {
 

@@ -5,9 +5,8 @@ import io.github.wycst.wast.clients.http.definition.HttpClientMethod;
 import io.github.wycst.wast.clients.http.definition.HttpClientRequest;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/5 16:19
- * @Description:
+ * @author wangy
+ * @since 2020/7/5 16:19
  */
 public class HttpClientRequestBuilder {
 

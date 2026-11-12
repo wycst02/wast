@@ -9,9 +9,8 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/2 16:36
- * @Description:
+ * @author wangy
+ * @since 2020/7/2 16:36
  */
 @SuppressWarnings("ALL")
 public class HttpClient extends AbstractHttpClient {

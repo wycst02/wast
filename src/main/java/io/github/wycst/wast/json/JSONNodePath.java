@@ -17,8 +17,8 @@ import java.util.List;
  * <li>"//" :  从当前节点开始查找所有满足条件的节点，并遍历所有子孙节点；</li>
  * <li>"/"  :  仅从当前节点开始查找所有满足条件的节点（不包括子孙节点）；</li>
  *
- * @Date 2024/10/9 19:28
- * @Created by wangyc
+ * @since 2024/10/9 19:28
+ * @author wangyc
  */
 public final class JSONNodePath {
 

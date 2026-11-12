@@ -15,9 +15,8 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * @Author: wangy
- * @Date: 2021/2/15 12:26
- * @Description:
+ * @author wangy
+ * @since 2021/2/15 12:26
  */
 public final class EntitySqlMapping {
 

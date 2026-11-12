@@ -8,9 +8,8 @@ import java.lang.reflect.Modifier;
 /**
  * 使用setter方法反射
  *
- * @Author: wangy
- * @Date: 2022/1/8 13:42
- * @Description:
+ * @author wangy
+ * @since 2022/1/8 13:42
  */
 final class SetterMethodInfo extends SetterInfo {
 

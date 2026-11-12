@@ -1,9 +1,8 @@
 package io.github.wycst.wast.jdbc.exception;
 
 /**
- * @Author: wangy
- * @Date: 2021/7/25 22:30
- * @Description:
+ * @author wangy
+ * @since 2021/7/25 22:30
  */
 public class EntityException extends RuntimeException {
 

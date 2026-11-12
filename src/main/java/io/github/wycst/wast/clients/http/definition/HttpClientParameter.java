@@ -5,9 +5,8 @@ import io.github.wycst.wast.common.utils.IOUtils;
 import java.io.*;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/2 16:18
- * @Description:
+ * @author wangy
+ * @since 2020/7/2 16:18
  */
 public class HttpClientParameter {
 

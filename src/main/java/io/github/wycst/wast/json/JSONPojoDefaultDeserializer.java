@@ -6,8 +6,8 @@ import io.github.wycst.wast.json.exceptions.JSONException;
 /**
  * pojo Deserializer
  *
- * @Author wangyunchao
- * @Date 2022/6/28 13:02
+ * @author wangyunchao
+ * @since 2022/6/28 13:02
  */
 public class JSONPojoDefaultDeserializer<T> extends JSONPojoDeserializer {
 

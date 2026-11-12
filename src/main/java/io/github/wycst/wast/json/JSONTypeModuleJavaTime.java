@@ -13,7 +13,7 @@ import java.util.function.ToIntFunction;
  * <p> java.time.* 注册模块 </p>
  * <p> jdk8+ </p>
  *
- * @Author: wangy
+ * @author wangy
  * @see ZoneId
  * @see Duration
  * @see Period

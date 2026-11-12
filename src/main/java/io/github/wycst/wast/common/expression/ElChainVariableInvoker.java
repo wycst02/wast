@@ -7,9 +7,8 @@ import java.util.Map;
  * Building chained calls of multiple Invokes instead of cyclic overhead
  * When the number is limited, the performance is better than that of circular calls;
  *
- * @Author: wangy
- * @Date: 2022/10/29 22:51
- * @Description:
+ * @author wangy
+ * @since 2022/10/29 22:51
  */
 public class ElChainVariableInvoker implements ElInvoker {
 

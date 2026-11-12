@@ -30,9 +30,8 @@ import java.util.*;
  * 支持字符串，字符数组，文件，输入流，远程URL的读取解析
  * 支持对象类型转化；
  *
- * @Author: wangy
- * @Date: 2022/5/21 17:51
- * @Description:
+ * @author wangy
+ * @since 2022/5/21 17:51
  */
 public final class YamlDocument extends YamlParser {
 

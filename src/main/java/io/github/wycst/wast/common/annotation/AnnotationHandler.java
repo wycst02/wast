@@ -5,9 +5,8 @@ import java.lang.annotation.Annotation;
 /**
  * 注解接口处理
  *
- * @Author: wangy
- * @Date: 2019/12/8 9:38
- * @Description:
+ * @author wangy
+ * @since 2019/12/8 9:38
  */
 public interface AnnotationHandler<A, R> {
 

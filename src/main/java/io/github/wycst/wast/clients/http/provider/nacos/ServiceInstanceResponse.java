@@ -4,9 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Author: wangy
- * @Date: 2021/8/7 20:03
- * @Description:
+ * @author wangy
+ * @since 2021/8/7 20:03
  */
 public class ServiceInstanceResponse {
 

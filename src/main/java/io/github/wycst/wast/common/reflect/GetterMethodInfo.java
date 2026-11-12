@@ -7,9 +7,8 @@ import java.lang.reflect.Method;
 /**
  * 使用getter方法反射
  *
- * @Author: wangy
- * @Date: 2022/1/8 13:32
- * @Description:
+ * @author wangy
+ * @since 2022/1/8 13:32
  */
 final class GetterMethodInfo extends GetterInfo {
 

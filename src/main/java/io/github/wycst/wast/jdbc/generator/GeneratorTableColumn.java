@@ -3,8 +3,8 @@ package io.github.wycst.wast.jdbc.generator;
 /**
  * 表字段信息
  *
- * @Author wangyunchao
- * @Date 2021/9/3 18:26
+ * @author wangyunchao
+ * @since 2021/9/3 18:26
  */
 public class GeneratorTableColumn {
 

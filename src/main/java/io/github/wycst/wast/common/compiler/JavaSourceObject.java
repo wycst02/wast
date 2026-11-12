@@ -3,8 +3,8 @@ package io.github.wycst.wast.common.compiler;
 /**
  * java to compile code object
  *
- * @Date 2024/3/16 22:22
- * @Created by wangyc
+ * @since 2024/3/16 22:22
+ * @author wangyc
  */
 public class JavaSourceObject {
 

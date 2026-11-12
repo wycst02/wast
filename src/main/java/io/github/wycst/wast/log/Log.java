@@ -3,9 +3,8 @@ package io.github.wycst.wast.log;
 import java.util.logging.*;
 
 /**
- * @Author: wangy
- * @Date: 2020/5/5 15:46
- * @Description:
+ * @author wangy
+ * @since 2020/5/5 15:46
  */
 public final class Log {
 

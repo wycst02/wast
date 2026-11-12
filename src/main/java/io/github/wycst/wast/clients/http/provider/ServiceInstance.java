@@ -1,9 +1,8 @@
 package io.github.wycst.wast.clients.http.provider;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/10 15:16
- * @Description:
+ * @author wangy
+ * @since 2020/7/10 15:16
  */
 public class ServiceInstance {
 

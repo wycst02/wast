@@ -6,9 +6,8 @@ import io.github.wycst.wast.clients.http.definition.HttpClientMethod;
 import java.io.File;
 
 /**
- * @Author: wangy
- * @Date: 2020/7/2 19:19
- * @Description:
+ * @author wangy
+ * @since 2020/7/2 19:19
  */
 public class HttpClientPost extends HttpClientRequestImpl {
 

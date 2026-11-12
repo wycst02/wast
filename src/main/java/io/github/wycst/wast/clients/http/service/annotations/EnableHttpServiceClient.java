@@ -3,9 +3,8 @@
 //import java.lang.annotation.*;
 //
 /// **
-// * @Author: wangy
-// * @Date: 2021/8/14 20:45
-// * @Description:
+// * @author wangy
+// * @since 2021/8/14 20:45
 // */
 //@Target(ElementType.TYPE)
 //@Retention(RetentionPolicy.RUNTIME)

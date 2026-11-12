@@ -1,8 +1,8 @@
 package io.github.wycst.wast.json;
 
 /**
- * @Date 2024/10/13 7:53
- * @Created by wangyc
+ * @since 2024/10/13 7:53
+ * @author wangyc
  */
 public abstract class JSONNodeCollector<T> {
 

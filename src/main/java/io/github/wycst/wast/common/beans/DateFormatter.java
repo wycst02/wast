@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * 常用日期格式化
  *
- * @Author wangyunchao
+ * @author wangyunchao
  */
 public class DateFormatter {
 

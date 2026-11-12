@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit;
  * <p> 实例注册
  * <p> 集成httpclient
  *
- * @Author wangyunchao
- * @Date 2022/7/13 9:35
+ * @author wangyunchao
+ * @since 2022/7/13 9:35
  */
 public class NacosServiceProvider extends CloudServiceProvider {
 

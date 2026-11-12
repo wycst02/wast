@@ -4,9 +4,8 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * @Author: wangy
- * @Date: 2021/2/16 11:44
- * @Description:
+ * @author wangy
+ * @since 2021/2/16 11:44
  */
 public class FieldCondition {
 

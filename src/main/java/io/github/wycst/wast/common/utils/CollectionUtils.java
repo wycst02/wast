@@ -8,9 +8,8 @@ import java.util.*;
 /**
  * 集合和数组类工具方法
  *
- * @Author: wangy
- * @Date: 2020/3/25 0:09
- * @Description:
+ * @author wangy
+ * @since 2020/3/25 0:09
  */
 public final class CollectionUtils {
 

@@ -8,8 +8,8 @@ import java.net.URL;
 import java.util.UUID;
 
 /**
- * @Date 2024/9/29 13:46
- * @Created by wangyc
+ * @since 2024/9/29 13:46
+ * @author wangyc
  */
 final class JSONTypeExtensionDesr {
 
