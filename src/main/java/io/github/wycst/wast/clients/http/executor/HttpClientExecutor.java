@@ -27,6 +27,7 @@ public abstract class HttpClientExecutor {
     private ServiceProvider serviceProvider = new DefaultServiceProvider();
     private boolean enableLoadBalance = false;
     private boolean keepAliveOnTimeout;
+    private boolean trustAllCertificates = false;
 
     protected abstract HttpClientResponse doExecuteRequest(HttpClientRequest httpRequest) throws Throwable;
 
@@ -143,6 +144,14 @@ public abstract class HttpClientExecutor {
 
     public void setKeepAliveOnTimeout(boolean keepAliveOnTimeout) {
         this.keepAliveOnTimeout = keepAliveOnTimeout;
+    }
+
+    public boolean isTrustAllCertificates() {
+        return trustAllCertificates;
+    }
+
+    public void setTrustAllCertificates(boolean trustAllCertificates) {
+        this.trustAllCertificates = trustAllCertificates;
     }
 
     private void handleExecuteRequestThrowable(Throwable e, HttpClientRequest httpRequest) {

@@ -89,6 +89,15 @@ class AbstractHttpClient {
         httpClientExecutor.setKeepAliveOnTimeout(keepAliveOnTimeout);
     }
 
+    /**
+     * 是否信任所有 HTTPS 证书，仅对当前客户端实例发起的请求生效，默认关闭，不会修改 JVM 全局 SSL 默认设置
+     *
+     * @param trustAllCertificates
+     */
+    public void setTrustAllCertificates(boolean trustAllCertificates) {
+        httpClientExecutor.setTrustAllCertificates(trustAllCertificates);
+    }
+
     protected final static String stringify(Map<String, Object> params) {
         StringBuilder builder = new StringBuilder();
         int length = params.size();

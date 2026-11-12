@@ -7,7 +7,7 @@ import io.github.wycst.wast.common.utils.IOUtils;
 import javax.net.ssl.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.NoSuchAlgorithmException;
+import java.net.HttpURLConnection;
 import java.security.SecureRandom;
 
 /**
@@ -17,31 +17,39 @@ import java.security.SecureRandom;
  */
 abstract class AbstractUrlHttpClientExecutor extends HttpClientExecutor {
 
-    static {
-        // -Dhttps.protocols=TLSv1,SSLv3
-        if (System.getProperty("https.protocols") == null) {
-            System.setProperty("https.protocols", "TLSv1,TLSv1.2,SSLv3");
+    private static volatile SSLContext insecureSslContext;
+
+    private static final HostnameVerifier INSECURE_HOSTNAME_VERIFIER = new HostnameVerifier() {
+        public boolean verify(String hostname, SSLSession session) {
+            return true;
         }
-        try {
-            SSLContext sslcontext = SSLContext.getInstance("SSL", "SunJSSE");
-            TrustManager[] tm = {new X509TrustManagerImpl()};
-            sslcontext.init(null, tm, new SecureRandom());
-            HostnameVerifier ignoreHostnameVerifier = new HostnameVerifier() {
-                public boolean verify(String arg0, SSLSession arg1) {
-                    return true;
+    };
+
+    /**
+     * Apply the trust-all SSL settings to this connection only when explicitly enabled,
+     * leaving JVM-wide SSL defaults untouched.
+     */
+    static void applySslConfigIfNeeded(HttpURLConnection httpConnection, boolean trustAllCertificates) throws Exception {
+        if (trustAllCertificates && httpConnection instanceof HttpsURLConnection) {
+            HttpsURLConnection httpsConnection = (HttpsURLConnection) httpConnection;
+            httpsConnection.setSSLSocketFactory(insecureSslContext().getSocketFactory());
+            httpsConnection.setHostnameVerifier(INSECURE_HOSTNAME_VERIFIER);
+        }
+    }
+
+    private static SSLContext insecureSslContext() throws Exception {
+        SSLContext context = insecureSslContext;
+        if (context == null) {
+            synchronized (AbstractUrlHttpClientExecutor.class) {
+                context = insecureSslContext;
+                if (context == null) {
+                    context = SSLContext.getInstance("TLS");
+                    context.init(null, new TrustManager[]{new X509TrustManagerImpl()}, new SecureRandom());
+                    insecureSslContext = context;
                 }
-            };
-            HttpsURLConnection
-                    .setDefaultHostnameVerifier(ignoreHostnameVerifier);
-            HttpsURLConnection.setDefaultSSLSocketFactory(sslcontext
-                    .getSocketFactory());
-
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
+            }
         }
-
+        return context;
     }
 
     protected static byte[] readInputStream(InputStream is, int contentLength) {

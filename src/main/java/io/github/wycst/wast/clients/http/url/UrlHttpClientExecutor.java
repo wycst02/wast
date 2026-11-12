@@ -28,7 +28,7 @@ import java.util.Set;
 public class UrlHttpClientExecutor extends AbstractUrlHttpClientExecutor {
 
     // log
-    private final Log log = LogFactory.getLog(UrlHttpClientExecutor.class);
+    private static final Log log = LogFactory.getLog(UrlHttpClientExecutor.class);
 
     @Override
     public final byte[] fastGetBody(String targetUrl, Map<String, String> headers) {
@@ -66,6 +66,7 @@ public class UrlHttpClientExecutor extends AbstractUrlHttpClientExecutor {
         try {
             URL url = new URL(targetUrl);
             httpConnection = (HttpURLConnection) url.openConnection();
+            applySslConfigIfNeeded(httpConnection, isTrustAllCertificates());
             httpConnection.setRequestMethod("GET");
             if (headers != null) {
                 Set<Map.Entry<String, String>> entries = headers.entrySet();
@@ -141,6 +142,7 @@ public class UrlHttpClientExecutor extends AbstractUrlHttpClientExecutor {
         } else {
             httpConnection = (HttpURLConnection) url.openConnection(proxy);
         }
+        applySslConfigIfNeeded(httpConnection, isTrustAllCertificates());
         if (!UnsafeHelper.setRequestMethod(httpConnection, method)) {
             httpConnection.setRequestMethod(method);
         }
